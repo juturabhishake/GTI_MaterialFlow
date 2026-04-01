@@ -63,17 +63,17 @@ export function NavUser({
               size="lg"
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
-              <Avatar className="h-8 w-8 rounded-lg bg-[var(--primary)] text-green-700 flex items-center justify-center">
-                <IconUserCircle className="h-15 w-5 text-white" />
+              <Avatar className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-sm">
+                <IconUserCircle className="h-5 w-5 text-primary-foreground" />
               </Avatar>
 
               <div className="grid flex-1 text-left text-sm leading-tight">
-                <span className="truncate font-medium">{user.name}</span>
+                <span className="truncate font-semibold">{user.name}</span>
                 <span className="text-muted-foreground truncate text-xs">
                   {user.email}
                 </span>
               </div>
-              <IconDotsVertical className="ml-auto size-4" />
+              <IconDotsVertical className="ml-auto size-4 text-muted-foreground" />
             </SidebarMenuButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent
@@ -88,8 +88,8 @@ export function NavUser({
                   <AvatarImage src={user.avatar} alt={user.name} />
                   <AvatarFallback className="rounded-lg">CN</AvatarFallback>
                 </Avatar> */}
-                <Avatar className="h-8 w-8 rounded-lg bg-[var(--primary)] text-green-700 flex items-center justify-center">
-                  <IconUserCircle className="h-15 w-5 text-white" />
+                <Avatar className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center shadow-sm">
+                  <IconUserCircle className="h-5 w-5 text-primary-foreground" />
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-medium">{user.name}</span>
