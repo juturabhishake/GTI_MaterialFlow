@@ -25,9 +25,9 @@ export default function LayoutClient({ children }: { children: React.ReactNode }
       }
     >
       <AppSidebar variant="inset" />
-      <SidebarInset>
+      <SidebarInset className="bg-background">
         <SiteHeader />
-        <div className="flex flex-1 flex-col p-3">{children}</div>
+        <div className="flex flex-1 flex-col p-3 gap-4">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );

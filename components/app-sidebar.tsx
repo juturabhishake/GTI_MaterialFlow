@@ -260,10 +260,10 @@ function NavMainItem({
   return (
     <div className={`pl-${level * 4} mb-1`}>
       <div
-        className={`flex items-center justify-between cursor-pointer px-2 py-1 rounded transition-colors duration-300 ${
+        className={`flex items-center justify-between cursor-pointer px-2 py-1.5 rounded-md transition-all duration-200 ${
           isActive
-            ? "bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold"
-            : "hover:bg-[var(--primary)/20] hover:text-[var(--primary)]"
+            ? "bg-primary text-primary-foreground font-semibold shadow-sm"
+            : "hover:bg-accent hover:text-accent-foreground text-foreground/80"
         }`}
         onClick={handleItemClick}
       >
@@ -432,10 +432,11 @@ React.useEffect(() => {
               asChild
               className="data-[slot=sidebar-menu-button]:!p-1.5"
             >
-              <a href="/dashboard">
-                {/* <IconInnerShadowTop className="!size-5" /> */}
-                <img src="/icon.png" alt="gti-logo" className="size-5 w-6" />
-                <span className="text-base text-primary font-bold">
+              <a href="/dashboard" className="flex items-center gap-2.5">
+                <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary shadow-sm">
+                  <img src="/icon.png" alt="gti-logo" className="size-4" />
+                </div>
+                <span className="text-sm font-bold tracking-tight text-foreground">
                   Greentech Industries
                 </span>
               </a>
