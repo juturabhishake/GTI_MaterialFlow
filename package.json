@@ -44,6 +44,7 @@
     "file-saver": "^2.0.5",
     "formidable": "^3.5.4",
     "framer-motion": "^12.23.12",
+    "fstream": "^1.0.12",
     "handsontable": "^15.3.0",
     "jspdf": "^3.0.4",
     "jspdf-autotable": "^5.0.2",

@@ -51,15 +51,15 @@ const data = {
       icon: IconDashboard,
     },
     {
-      title: "QA Dashboard",
-      url: "/qa-dashboard",
-      icon: IconPresentationAnalytics,
+      title: "Purchase Receipts",
+      url: "/PurchaseReceipts",
+      icon: IconDatabase,
     },
-    // {
-    //   title: "Process Audit",
-    //   url: "/processAudit",
-    //   icon: IconListDetails,
-    // },
+    {
+      title: "Material Requests",
+      url: "/MaterialRequests",
+      icon: IconDatabase,
+    },
     {
       title: "Process Audit",
       url: "#",
@@ -73,21 +73,6 @@ const data = {
           title: "NC Lists",
           url: "/processAudit/NCList",
         },
-      ]
-    },
-    {
-      title: "System Audit",
-      url: "#",
-      icon: IconListDetails,
-      items: [
-        {
-          title: "Plan",
-          url: "/system_audit_form/plan",
-        },
-        {
-          title: "NC Lists",
-          url: "/system_audit_form/why-analysis",
-        }
       ]
     },
     // {
@@ -175,26 +160,6 @@ const data = {
       url: "/AccessManagement",
       icon: IconSettings,
     },
-    {
-      title: "QA Direct NC Lists",
-      url: "/processAudit/qa_direct_nc_list",
-      icon: IconReport,
-    },
-    {
-      title: "QA Admin Direct NC Lists",
-      url: "/processAudit/qa_admin_direct_nc_list",
-      icon: IconReport,
-    },
-    // {
-    //   title: "Equipment Master status",
-    //   url: "/equipment/status",
-    //   icon: IconReport,
-    // },
-    // {
-    //   title: "Admin Equipment Breakdown and Repair Details",
-    //   url: "/Equipment_Breakdown_and_RepairForm/admin",
-    //   icon: IconTicket,
-    // },
     {
       title: "Get Help",
       url: "#",
