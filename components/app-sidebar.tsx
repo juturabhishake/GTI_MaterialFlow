@@ -66,6 +66,23 @@ const data = {
       icon: IconDatabase,
     },
     {
+      title: "Purchase Request",
+      url: "#",
+      icon: IconFolder,
+      items: [
+        {
+          icon: IconFileWord,
+          title: "Add",
+          url: "/purchase_req_form",
+        },
+        {
+          icon: IconDatabase,
+          title: "View",
+          url: "/purchase_req_form/view",
+        },
+      ]
+    },
+    {
       title: "Process Audit",
       url: "#",
       icon: IconListDetails,
