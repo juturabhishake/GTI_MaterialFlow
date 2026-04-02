@@ -61,6 +61,11 @@ const data = {
       icon: IconDatabase,
     },
     {
+      title: "Aging View",
+      url: "/Aging_View",
+      icon: IconDatabase,
+    },
+    {
       title: "Process Audit",
       url: "#",
       icon: IconListDetails,
