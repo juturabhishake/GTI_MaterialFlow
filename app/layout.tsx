@@ -9,7 +9,7 @@ import { ActiveThemeProvider } from "@/components/active-theme";
 import LayoutClient from "@/components/layout-client"; 
 
 export const metadata: Metadata = {
-  title: "GTI Internal Audit System",
+  title: "GTI Material Flow",
   description:
     "A fully responsive analytics dashboard featuring dynamic charts, interactive tables, a collapsible sidebar, and a light/dark mode theme switcher.",
 };
