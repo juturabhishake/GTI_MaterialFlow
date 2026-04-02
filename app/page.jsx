@@ -42,7 +42,7 @@ export default function Home() {
           setStatus("success");
 
           setTimeout(() => {
-              window.location.href = "/dashboard";
+              window.location.href = "/MaterialRequests";
           }, 3000);
       }
       else {
