@@ -66,6 +66,57 @@ const data = {
       icon: IconDatabase,
     },
     {
+      title: "Walter Master",
+      url: "#",
+      icon: IconFolder,
+      items: [
+        {
+          icon: IconFileWord,
+          title: "Add",
+          url: "/Walter/Master",
+        },
+        {
+          icon: IconDatabase,
+          title: "View",
+          url: "/Walter/Master/view",
+        },
+      ]
+    },
+    {
+      title: "Walter Basic",
+      url: "#",
+      icon: IconFolder,
+      items: [
+        {
+          icon: IconFileWord,
+          title: "Entry",
+          url: "/Walter/Basic",
+        },
+        {
+          icon: IconDatabase,
+          title: "View",
+          url: "/Walter/Basic/view",
+        },
+      ]
+    },
+    {
+      title: "Cutting Tools Req. Mod.",
+      url: "#",
+      icon: IconFolder,
+      items: [
+        {
+          icon: IconFileWord,
+          title: "Form",
+          url: "/req_form/cutting_tools_req_modification",
+        },
+        {
+          icon: IconDatabase,
+          title: "View",
+          url: "/req_form/cutting_tools_req_modification/view",
+        },
+      ]
+    },
+    {
       title: "Purchase Request",
       url: "#",
       icon: IconFolder,
