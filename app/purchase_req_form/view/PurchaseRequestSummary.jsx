@@ -93,7 +93,7 @@ export default function PurchaseRequestSummary({ onViewDetails, onCreateNew }) {
                                 id="date"
                                 variant={"outline"}
                                 className={cn(
-                                    "w-[260px] justify-start text-left font-normal",
+                                    "w-[260px] justify-start text-left font-normal cursor-pointer",
                                     !dateRange && "text-muted-foreground"
                                 )}
                             >
@@ -128,7 +128,9 @@ export default function PurchaseRequestSummary({ onViewDetails, onCreateNew }) {
                         </PopoverContent>
                     </Popover>
 
-                    <Button onClick={onCreateNew}><Plus className="mr-2 h-4 w-4" /> New Request</Button>
+                    <Button onClick={onCreateNew} className="cursor-pointer">
+                        <Plus className="mr-2 h-4 w-4" /> New Request
+                    </Button>
                 </div>
             </div>
 

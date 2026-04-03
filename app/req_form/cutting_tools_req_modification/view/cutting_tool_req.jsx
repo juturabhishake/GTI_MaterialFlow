@@ -33,6 +33,9 @@ const FilterColumn = ({ column, data, columnFilters, setColumnFilters }) => {
     const options = useMemo(() => {
         const values = new Set(data.map(item => {
             if (column.key === 'RequestDate') return format(new Date(item[column.key]), 'dd-MMM-yyyy');
+            if (column.key === 'isHOSApproved' || column.key === 'isReceiverApproved') {
+                return item[column.key] ? 'Approved' : 'Pending';
+            }
             return String(item[column.key] || '');
         }));
         return Array.from(values).filter(Boolean).sort().map(val => ({
@@ -200,7 +203,16 @@ export default function CuttingToolsViewPage() {
             if (columnFilters[key]?.length > 0) {
                 filtered = filtered.filter(item => {
                     let val = item[key];
-                    if (key === 'RequestDate') val = format(new Date(val), 'dd-MMM-yyyy');
+                    // if (key === 'RequestDate') val = format(new Date(val), 'dd-MMM-yyyy');
+                    if (key === 'RequestDate') {
+                        val = format(new Date(val), 'dd-MMM-yyyy');
+                    }
+                    else if (key === 'isHOSApproved' || key === 'isReceiverApproved') {
+                        val = val ? 'Approved' : 'Pending'; 
+                    }
+                    else {
+                        val = String(val);
+                    }
                     return columnFilters[key].includes(String(val));
                 });
             }
