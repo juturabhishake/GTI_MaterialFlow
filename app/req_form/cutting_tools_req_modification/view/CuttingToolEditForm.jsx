@@ -4,6 +4,8 @@ import { Check, Loader2, AlertCircle, Save, RefreshCw, Calendar as CalendarIcon,
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, isSameMonth, isSameDay, startOfWeek, endOfWeek, addDays } from 'date-fns';
 import { generateCuttingToolPDF } from './cuttingToolsPdf';
 import { useAdminAccessCheck } from '@/lib/checkAdmin';
+import SecureLS from 'secure-ls';
+import { UserCheck, XCircle } from 'lucide-react';
 
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
@@ -108,7 +110,7 @@ const CuttingToolEditForm = ({ item, onSave, onCancel, onDelete }) => {
   const { hasAccess: isAdmin, isLoading: accessLoading } = useAdminAccessCheck(PAGE_ID_FOR_THIS_FORM);
   const [loadingItems, setLoadingItems] = useState(false);
   const [itemsList, setItemsList] = useState([]);
-  
+  const [currentUser, setCurrentUser] = useState({ empId: '', name: '', role: '' });
   const [formData, setFormData] = useState({
     Id: item.Id,
     requestSection: item.RequestSection,
@@ -116,14 +118,31 @@ const CuttingToolEditForm = ({ item, onSave, onCancel, onDelete }) => {
     requestedBy: item.RequestedBy,
     receivedQty: item.ReceivedQty,
     receivedBy: item.ReceivedBy,
-    checkedBy: item.CheckedBy
+    checkedBy: item.CheckedBy,
+    HOSName: item.HOSName || '',
+    HOSempid: item.HOSempid || '',
+    isHOSApproved: item.isHOSApproved || false,
+    ReceiverName: item.ReceiverName || '',
+    Receiver_emp_id: item.Receiver_emp_id || '',
+    isReceiverApproved: item.isReceiverApproved || false,
   });
 
   const [toolData, setToolData] = useState({
     from: { itemCode: item.From_ItemCode, spec: item.From_Specification, project: item.From_Project, op: item.From_Operation, drawing: item.From_DrawingNo },
     to: { itemCode: item.To_ItemCode, spec: item.To_Specification, project: item.To_Project, op: item.To_Operation, drawing: item.To_DrawingNo }
   });
-  
+  useEffect(() => {
+    try {
+      const ls = new SecureLS({ encodingType: "aes" });
+      setCurrentUser({
+        empId: ls.get("employee_id") || "",
+        name: ls.get("full_name") || "",
+        role: ls.get("role") || "",
+      });
+    } catch (error) {
+      console.error("Local storage fetching error:", error);
+    }
+  }, []);
   const getInitialPurposeKey = (pString) => {
     if (!pString) return '';
     if (pString === "Tool Life Issue") return 'toolLife';
@@ -140,7 +159,6 @@ const CuttingToolEditForm = ({ item, onSave, onCancel, onDelete }) => {
   const [errors, setErrors] = useState({});
   const [submitStatus, setSubmitStatus] = useState('idle');
 
-  // Sync state if item changes
   useEffect(() => {
     const initKey = getInitialPurposeKey(item.Purpose);
     setPurpose(initKey);
@@ -157,7 +175,9 @@ const CuttingToolEditForm = ({ item, onSave, onCancel, onDelete }) => {
     };
     fetchItems();
   }, []);
-
+  const isFormEditable = isAdmin || 
+    (currentUser.role === 'HOS' && !formData.isHOSApproved) || 
+    (currentUser.role === 'Res' && formData.isHOSApproved && !formData.isReceiverApproved);
   const handleItemSelect = async (side, code) => {
     setToolData(prev => ({ ...prev, [side]: { ...prev[side], itemCode: code, spec: 'Loading...', project: 'Loading...' } }));
     try {
@@ -166,8 +186,27 @@ const CuttingToolEditForm = ({ item, onSave, onCancel, onDelete }) => {
       setToolData(prev => ({ ...prev, [side]: { ...prev[side], itemCode: code, spec: data.SizeSpecifications || 'N/A', project: data.ProjectName || 'N/A' } }));
     } catch { setToolData(prev => ({ ...prev, [side]: { ...prev[side], spec: 'Error', project: 'Error' } })); }
   };
+  const handleApproveHOS = () => {
+    if(!confirm("Are you sure you want to Approve? Any unsaved form changes will also be saved.")) return;
+  
+    const approvalData = {
+        isHOSApproved: true,
+        HOSName: currentUser.name,
+        HOSempid: currentUser.empId
+    };
+    handleUpdate(approvalData);
+  };
 
-  const handleUpdate = async () => {
+  const handleApproveReceiver = () => {
+    if(!confirm("Are you sure you want to Approve? Any unsaved form changes will also be saved.")) return;
+    const approvalData = {
+        isReceiverApproved: true,
+        ReceiverName: currentUser.name,
+        Receiver_emp_id: currentUser.empId
+    };
+    handleUpdate(approvalData);
+  };
+  const handleUpdate = async (approvalData = null) => {
     let newErrors = {};
     if (!formData.receivedQty) newErrors.receivedQty = "Required";
     if (!toolData.from.itemCode || !toolData.to.itemCode) newErrors.itemCode = "Item Codes required";
@@ -192,7 +231,13 @@ const CuttingToolEditForm = ({ item, onSave, onCancel, onDelete }) => {
         };
         finalPurposeString = purposeMap[purpose] || "";
     }
-
+    const currentHOSName = approvalData?.HOSName !== undefined ? approvalData.HOSName : formData.HOSName;
+    const currentHOSempid = approvalData?.HOSempid !== undefined ? approvalData.HOSempid : formData.HOSempid;
+    const currentIsHOSApproved = approvalData?.isHOSApproved !== undefined ? approvalData.isHOSApproved : formData.isHOSApproved;
+    
+    const currentReceiverName = approvalData?.ReceiverName !== undefined ? approvalData.ReceiverName : formData.ReceiverName;
+    const currentReceiver_emp_id = approvalData?.Receiver_emp_id !== undefined ? approvalData.Receiver_emp_id : formData.Receiver_emp_id;
+    const currentIsReceiverApproved = approvalData?.isReceiverApproved !== undefined ? approvalData.isReceiverApproved : formData.isReceiverApproved;
     const payload = {
       Id: formData.Id,
       RequestSection: formData.requestSection,
@@ -212,7 +257,13 @@ const CuttingToolEditForm = ({ item, onSave, onCancel, onDelete }) => {
       To_Operation: toolData.to.op,
       To_DrawingNo: toolData.to.drawing,
       Purpose: finalPurposeString,
-      Reason: reason
+      Reason: reason,
+      HOSName: currentHOSName,
+      HOSempid: currentHOSempid,
+      isHOSApproved: currentIsHOSApproved,
+      ReceiverName: currentReceiverName,
+      Receiver_emp_id: currentReceiver_emp_id,
+      isReceiverApproved: currentIsReceiverApproved
     };
 
     await onSave(payload);
@@ -267,10 +318,10 @@ const CuttingToolEditForm = ({ item, onSave, onCancel, onDelete }) => {
   return (
     <div className="@container/main bg-card rounded-xl shadow-lg border border-primary/50 p-6 space-y-6 h-full overflow-y-auto">
       <div className="flex justify-between items-center border-b dark:border-primary/20 pb-4">
-        <h2 className="text-xl font-bold text-brand-500">Edit Request #{formData.Id}</h2>
+        <h2 className="text-xl font-bold text-primary">Edit Request #{formData.Id}</h2>
         <div className="flex gap-2">
             <button onClick={handleExportPDF} className="flex items-center gap-2 px-3 py-2 bg-primary/70 text-white rounded hover:bg-primary cursor-pointer transition-colors"><FileDown size={16} /> PDF</button>
-            {isAdmin && (
+            {isFormEditable && (
                 <button onClick={() => onDelete(formData.Id)} className="flex items-center gap-2 px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 cursor-pointer transition-colors"><Trash2 size={16} /> Delete</button>
             )}
             <button onClick={onCancel} className="flex items-center gap-2 px-3 py-2 border border-primary/50 cursor-pointer rounded text-gray-700 dark:text-gray-200 hover:bg-primary/30 transition-colors"><ArrowLeft size={16} /> Back</button>
@@ -278,58 +329,58 @@ const CuttingToolEditForm = ({ item, onSave, onCancel, onDelete }) => {
       </div>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <InputField label="Request Section" value={formData.requestSection} disabled />
-        {isAdmin ? (
+        {isFormEditable ? (
             <ShadcnDatePicker label="Date" value={formData.date} onChange={(val) => setFormData(p => ({...p, date: val}))} />
         ) : (
             <InputField label="Date" value={formData.date} disabled />
         )}
         <InputField label="Requested By" value={formData.requestedBy} disabled />
-        <InputField label="Checked By" value={formData.checkedBy} onChange={(e) => setFormData(p => ({...p, checkedBy: e.target.value}))} disabled={!isAdmin} />
-        <InputField label="Received Qty" type="number" value={formData.receivedQty} onChange={(e) => setFormData(p => ({...p, receivedQty: e.target.value}))} error={errors.receivedQty} disabled={!isAdmin} />
-        <InputField label="Received By" value={formData.receivedBy} onChange={(e) => setFormData(p => ({...p, receivedBy: e.target.value}))} disabled={!isAdmin} />
+        <InputField label="Checked By" value={formData.checkedBy} onChange={(e) => setFormData(p => ({...p, checkedBy: e.target.value}))} disabled={!isFormEditable} />
+        <InputField label="Received Qty" type="number" value={formData.receivedQty} onChange={(e) => setFormData(p => ({...p, receivedQty: e.target.value}))} error={errors.receivedQty} disabled={!isFormEditable} />
+        <InputField label="Received By" value={formData.receivedBy} onChange={(e) => setFormData(p => ({...p, receivedBy: e.target.value}))} disabled={!isFormEditable} />
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 relative">
         <div className="hidden md:block absolute left-1/2 top-0 bottom-0 w-px bg-primary/30"></div>
         <div className="space-y-4">
             <h3 className="font-bold border-b dark:border-primary/20 pb-2 text-brand-500">Current (From)</h3>
-            <Combobox options={itemsList} value={toolData.from.itemCode} onChange={(code) => handleItemSelect('from', code)} placeholder="Select Item" loading={loadingItems} disabledValue={toolData.to.itemCode} disabled={!isAdmin} />
+            <Combobox options={itemsList} value={toolData.from.itemCode} onChange={(code) => handleItemSelect('from', code)} placeholder="Select Item" loading={loadingItems} disabledValue={toolData.to.itemCode} disabled={!isFormEditable} />
             <InputField label="Spec" value={toolData.from.spec} disabled />
             <InputField label="Project" value={toolData.from.project} disabled />
-            <InputField label="Operation" value={toolData.from.op} onChange={(e) => setToolData(p=>({...p, from: {...p.from, op: e.target.value}}))} disabled={!isAdmin} />
-            <InputField label="Drawing" value={toolData.from.drawing} onChange={(e) => setToolData(p=>({...p, from: {...p.from, drawing: e.target.value}}))} disabled={!isAdmin} />
+            <InputField label="Operation" value={toolData.from.op} onChange={(e) => setToolData(p=>({...p, from: {...p.from, op: e.target.value}}))} disabled={!isFormEditable} />
+            <InputField label="Drawing" value={toolData.from.drawing} onChange={(e) => setToolData(p=>({...p, from: {...p.from, drawing: e.target.value}}))} disabled={!isFormEditable} />
         </div>
         <div className="space-y-4">
             <h3 className="font-bold border-b dark:border-primary/20 pb-2 text-brand-500">Required (To)</h3>
-            <Combobox options={itemsList} value={toolData.to.itemCode} onChange={(code) => handleItemSelect('to', code)} placeholder="Select Item" loading={loadingItems} disabledValue={toolData.from.itemCode} disabled={!isAdmin} />
+            <Combobox options={itemsList} value={toolData.to.itemCode} onChange={(code) => handleItemSelect('to', code)} placeholder="Select Item" loading={loadingItems} disabledValue={toolData.from.itemCode} disabled={!isFormEditable} />
             <InputField label="Spec" value={toolData.to.spec} disabled />
             <InputField label="Project" value={toolData.to.project} disabled />
-            <InputField label="Operation" value={toolData.to.op} onChange={(e) => setToolData(p=>({...p, to: {...p.to, op: e.target.value}}))} disabled={!isAdmin} />
-            <InputField label="Drawing" value={toolData.to.drawing} onChange={(e) => setToolData(p=>({...p, to: {...p.to, drawing: e.target.value}}))} disabled={!isAdmin} />
+            <InputField label="Operation" value={toolData.to.op} onChange={(e) => setToolData(p=>({...p, to: {...p.to, op: e.target.value}}))} disabled={!isFormEditable} />
+            <InputField label="Drawing" value={toolData.to.drawing} onChange={(e) => setToolData(p=>({...p, to: {...p.to, drawing: e.target.value}}))} disabled={!isFormEditable} />
         </div>
       </div>
       <div>
         <label className="font-bold block mb-2 text-gray-700 dark:text-gray-300">Purpose</label>
         <div className="flex flex-wrap gap-4 mb-4">
             {['toolLife', 'quality', 'lessInventory', 'implementation', 'others'].map(k => (
-                <label key={k} className={`flex items-center gap-2 cursor-pointer px-3 py-1 rounded border dark:border-primary/20 text-gray-800 dark:text-gray-200 ${!isAdmin ? 'pointer-events-none' : ''}`}>
+                <label key={k} className={`flex items-center gap-2 cursor-pointer px-3 py-1 rounded border dark:border-primary/20 text-gray-800 dark:text-gray-200 ${!isFormEditable ? 'pointer-events-none' : ''}`}>
                     <input 
                       type="radio" 
                       name="purpose_edit" 
                       checked={purpose === k} 
-                      onChange={() => isAdmin && setPurpose(k)} 
-                      // Removed disabled={!isAdmin} to fix visibility issue
+                      onChange={() => isFormEditable && setPurpose(k)} 
+                      // Removed disabled={!isFormEditable} to fix visibility issue
                       className="accent-brand-500" 
                     /> 
                     <span className="capitalize">{k.replace(/([A-Z])/g, ' $1')} {k === 'toolLife' || k === 'quality' ? 'Issue' : ''}</span>
                 </label>
             ))}
         </div>
-        {purpose === 'others' && <input className="w-full md:w-1/2 border border-primary/40 text-gray-900 dark:text-white rounded px-2 py-2 outline-none focus:border-brand-500 mb-2 disabled:bg-gray-100 disabled:text-gray-600 dark:disabled:bg-gray-700 dark:disabled:text-gray-400" value={othersDetail} onChange={e => setOthersDetail(e.target.value)} placeholder="Specify..." disabled={!isAdmin} />}
+        {purpose === 'others' && <input className="w-full md:w-1/2 border border-primary/40 text-gray-900 dark:text-white rounded px-2 py-2 outline-none focus:border-brand-500 mb-2 disabled:cursor-not-allowed disabled:text-gray-600 dark:disabled:text-gray-400" value={othersDetail} onChange={e => setOthersDetail(e.target.value)} placeholder="Specify..." disabled={!isFormEditable} />}
         
         <label className="font-bold block mb-2 text-gray-700 dark:text-gray-300">Reason</label>
-        <textarea className="w-full border dark:border-primary/40 text-gray-900 dark:text-white rounded p-2 outline-none focus:border-brand-500 disabled:bg-gray-100 disabled:text-gray-600 dark:disabled:bg-gray-700 dark:disabled:text-gray-400" rows={3} value={reason} onChange={e => setReason(e.target.value)} disabled={!isAdmin} />
+        <textarea className="w-full border dark:border-primary/40 text-gray-900 dark:text-white rounded p-2 outline-none focus:border-brand-500 disabled:text-gray-600 dark:disabled:text-gray-400 disabled:cursor-not-allowed " rows={3} value={reason} onChange={e => setReason(e.target.value)} disabled={!isFormEditable} />
       </div>
-      {isAdmin && (
+      {isFormEditable && (
           <div className="flex justify-end gap-4 pt-4 border-t dark:border-primary/20">
             <button onClick={handleReset} className="flex items-center gap-2 px-4 py-2 border dark:border-primary/20 text-gray-700 dark:text-gray-200 rounded hover:bg-primary/50 cursor-pointer transition-colors"><RefreshCw size={16} /> Reset</button>
             <button onClick={handleUpdate} disabled={submitStatus === 'loading'} className="flex items-center gap-2 px-6 py-2 bg-primary/70 text-white rounded hover:bg-primary cursor-pointer transition-colors">
@@ -337,6 +388,79 @@ const CuttingToolEditForm = ({ item, onSave, onCancel, onDelete }) => {
             </button>
           </div>
       )}
+      <div className="bg-primary/5 border-2 border-primary/30 rounded-xl p-6 mt-8 shadow-sm">
+        <div className="flex items-center gap-2 mb-6 border-b border-primary/20 pb-3">
+          <UserCheck className="text-primary h-6 w-6" />
+          <h3 className="text-xl font-extrabold text-primary">Approval Workflow</h3>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-card rounded-lg p-5 border border-primary/20 shadow-sm flex flex-col justify-between">
+            <div>
+              <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">HOS Approval</h4>
+              {formData.isHOSApproved ? (
+                <div className="text-green-600 bg-green-50 px-3 py-2 rounded-md border border-green-200">
+                  <p className="font-semibold flex items-center gap-2"><Check size={16}/> Approved</p>
+                  <p className="text-xs mt-1 text-green-700">By: {formData.HOSName} ({formData.HOSempid})</p>
+                </div>
+              ) : (
+                <div className="text-primary bg-primary/0 px-3 py-2 rounded-md border border-primary/20">
+                  <p className="font-semibold">Pending Approval</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              {formData.isHOSApproved ? (
+                 <span className="text-xs text-gray-400">Action completed</span>
+              ) : currentUser.role === 'HOS' ? (
+                <button type="button" onClick={handleApproveHOS} className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white py-2 rounded-md transition-colors font-medium cursor-pointer">
+                  {submitStatus === 'loading' ? <Loader2 className="animate-spin" /> : <UserCheck size={16} />} Approve as HOS
+                </button>
+              ) : (
+                <div className="flex items-center justify-center gap-2 text-gray bg-primary/50 py-2 rounded-md cursor-not-allowed">
+                  <XCircle size={16} /> No Access (HOS Only)
+                </div>
+              )}
+            </div>
+          </div>
+          <div className="bg-card rounded-lg p-5 border border-primary/20 shadow-sm flex flex-col justify-between">
+            <div>
+              <h4 className="text-sm font-bold text-gray-500 uppercase tracking-wider mb-2">Receiver Approval</h4>
+              {formData.isReceiverApproved ? (
+                <div className="text-green-600 bg-green-50 px-3 py-2 rounded-md border border-green-200">
+                  <p className="font-semibold flex items-center gap-2"><Check size={16}/> Approved</p>
+                  <p className="text-xs mt-1 text-green-700">By: {formData.ReceiverName} ({formData.Receiver_emp_id})</p>
+                </div>
+              ) : (
+                <div className="text-primary bg-primary/0 px-3 py-2 rounded-md border border-primary/20">
+                  <p className="font-semibold">Pending Approval</p>
+                </div>
+              )}
+            </div>
+            
+            <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+              {formData.isReceiverApproved ? (
+                 <span className="text-xs text-gray-400">Action completed</span>
+              ) : currentUser.role === 'Res' ? (
+                formData.isHOSApproved ? (
+                    <button type="button" onClick={handleApproveReceiver} className="w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white py-2 rounded-md transition-colors font-medium cursor-pointer">
+                      {submitStatus === 'loading' ? <Loader2 className="animate-spin" /> : <UserCheck size={16} />} Approve as Receiver
+                    </button>
+                 ) : (
+                    <div className="flex items-center justify-center gap-2 text-amber-600 bg-amber-50 border border-amber-200 py-2 rounded-md cursor-not-allowed">
+                      <Loader2 size={16} className="animate-spin" /> Waiting for HOS
+                    </div>
+                 )
+              ) : (
+                <div className="flex items-center justify-center gap-2 text-gray bg-primary/50 py-2 rounded-md cursor-not-allowed">
+                  <XCircle size={16} /> No Access (Receiver Only)
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

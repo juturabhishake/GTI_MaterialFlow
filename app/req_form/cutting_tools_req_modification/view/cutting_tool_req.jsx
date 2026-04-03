@@ -22,7 +22,9 @@ const allColumns = [
     { key: 'ReceivedBy', label: 'RECEIVED BY', filterable: true, width: '150px' },
     { key: 'From_ItemCode', label: 'FROM ITEM', filterable: true, width: '150px' },
     { key: 'To_ItemCode', label: 'TO ITEM', filterable: true, width: '150px' },
-    { key: 'Reason', label: 'REASON', filterable: true, width: 'auto' }
+    { key: 'Reason', label: 'REASON', filterable: true, width: 'auto' },
+    { key: 'isHOSApproved', label: 'HOS APP.', filterable: true, width: '100px' },
+    { key: 'isReceiverApproved', label: 'REC APP.', filterable: true, width: '100px' },
 ];
 
 const FilterColumn = ({ column, data, columnFilters, setColumnFilters }) => {
@@ -148,6 +150,7 @@ export default function CuttingToolsViewPage() {
             if (res.ok) {
                 const result = await res.json();
                 setData(result);
+                console.log("Fetched data:", result);
                 setPagination(p => ({ ...p, currentPage: 1 }));
                 setPageInputValue(1);
             }
@@ -232,13 +235,25 @@ export default function CuttingToolsViewPage() {
         setPageInputValue(page);
     };
 
-    if (viewMode === 'edit') return <CuttingToolEditForm item={editingItem} onSave={handleUpdate} onCancel={() => setViewMode('table')} onDelete={handleDelete} />;
+    if (viewMode === 'edit'){
+        return (
+            <CuttingToolEditForm 
+                item={editingItem} 
+                onSave={handleUpdate} 
+                onCancel={() => { 
+                    setViewMode('table'); 
+                    fetchData();
+                }} 
+                onDelete={handleDelete} 
+            />
+        )
+    } 
 
     return (
         <div className="@container/main flex flex-col h-screen bg-card border rounded-xl shadow-lg text-foreground font-sans transition-colors duration-200">
             <div className="flex flex-wrap gap-4 px-6 py-4 border-b border-border sticky top-0 z-20 flex justify-between items-center">
                 <div>
-                    <h1 className="text-xl text-brand-500 font-bold tracking-tight">Cutting Tool Modifications</h1>
+                    <h1 className="text-xl text-primary font-bold tracking-tight">Cutting Tool Modifications</h1>
                     <p className="text-sm text-muted-foreground mt-1">Manage modification requests and inventory tracking</p>
                 </div>
                 <DateRangePicker 
@@ -325,6 +340,28 @@ export default function CuttingToolsViewPage() {
                                             <td className="p-4 py-2.5 text-xs text-muted-foreground group-hover:text-foreground font-mono">{item.From_ItemCode}</td>
                                             <td className="p-4 py-2.5 text-xs text-muted-foreground group-hover:text-foreground font-mono">{item.To_ItemCode}</td>
                                             <td className="p-4 py-2.5 text-xs text-muted-foreground group-hover:text-foreground max-w-[200px] truncate" title={item.Reason}>{item.Reason}</td>
+                                            <td className="p-4 py-2.5 text-xs">
+                                                {item.isHOSApproved ? (
+                                                    <Badge variant="success" className="font-mono text-[10px] px-2 h-5 bg-green-500 text-white">
+                                                        Approved
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="destructive" className="font-mono text-[10px] px-2 h-5 bg-blue-500 text-white">
+                                                        Pending
+                                                    </Badge>
+                                                )}
+                                            </td>
+                                            <td className="p-4 py-2.5 text-xs">
+                                                {item.isReceiverApproved ? (
+                                                    <Badge variant="success" className="font-mono text-[10px] px-2 h-5 bg-green-500 text-white">
+                                                        Approved
+                                                    </Badge>
+                                                ) : (
+                                                    <Badge variant="destructive" className="font-mono text-[10px] px-2 h-5 bg-blue-500 text-white">
+                                                        Pending
+                                                    </Badge>
+                                                )}
+                                            </td>
                                         </tr>
                                     ))
                                 )}
