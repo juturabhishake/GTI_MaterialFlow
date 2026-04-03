@@ -20,8 +20,8 @@ export function SiteHeader() {
         />
         {/* <h1 className="text-base font-medium">Internal Audit System</h1> */}
         <h1 className="text-base font-medium">
-          <span className="md:hidden">ISO</span>
-          <span className="hidden md:block">Internal Audit System</span>
+          <span className="md:hidden">GTI_MF</span>
+          <span className="hidden md:block">GTI_Material_Flow</span>
         </h1>
         <div className="ml-auto flex items-center gap-2">
           <ThemeSelector />
