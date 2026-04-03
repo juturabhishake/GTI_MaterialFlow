@@ -1,6 +1,6 @@
 'use client';
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Loader2, Calendar as CalendarIcon } from 'lucide-react';
+import { Plus, Loader2, Calendar as CalendarIcon, Check } from 'lucide-react';
 import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
@@ -10,14 +10,47 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAdminAccessCheck } from '@/lib/checkAdmin';
 
+// const summaryColumns = [
+//     { key: 'FormattedRequestId', label: 'Request ID', filterable: true, hidden: false },
+//     { key: 'TotalOrderQty', label: 'Total Order Qty', filterable: true, hidden: false },
+//     { key: 'DemandDate', label: 'Demand Date', filterable: true, hidden: false },
+//     { key: 'Status', label: 'Status', filterable: true, hidden: false },
+// ];
+const renderStatusFilterUI = (statusText) => {
+    const hosApp = statusText === 'Pending REC' || statusText === 'Approved';
+    const recApp = statusText === 'Approved';
+
+    return (
+        <div className="flex items-center w-full gap-2 pointer-events-none">
+            <div className="flex items-center scale-75 origin-left w-16">
+                <div className={cn("h-5 w-5 rounded-full flex items-center justify-center border-2", hosApp ? "bg-green-500 border-green-500 text-white" : "border-amber-500 text-amber-500 bg-amber-50")}>
+                    {hosApp ? <Check size={10} strokeWidth={3} /> : <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div>}
+                </div>
+                <div className="h-[2px] w-4 bg-gray-200 mx-0.5 rounded-full overflow-hidden relative">
+                    <div className={cn("absolute top-0 left-0 h-full bg-green-500", hosApp ? "w-full" : "w-0")}></div>
+                </div>
+                <div className={cn("h-5 w-5 rounded-full flex items-center justify-center border-2", recApp ? "bg-green-500 border-green-500 text-white" : (hosApp ? "border-amber-500 text-amber-500 bg-amber-50" : "border-gray-300 bg-gray-50"))}>
+                    {recApp ? <Check size={10} strokeWidth={3} /> : (hosApp ? <div className="h-1.5 w-1.5 rounded-full bg-amber-500"></div> : null)}
+                </div>
+            </div>
+            <span className="text-xs font-medium">{statusText}</span>
+        </div>
+    );
+};
 const summaryColumns = [
     { key: 'FormattedRequestId', label: 'Request ID', filterable: true, hidden: false },
     { key: 'TotalOrderQty', label: 'Total Order Qty', filterable: true, hidden: false },
     { key: 'DemandDate', label: 'Demand Date', filterable: true, hidden: false },
+    { 
+        key: 'Status', 
+        label: 'Status', 
+        filterable: true, 
+        hidden: false, 
+        renderFilterOption: renderStatusFilterUI 
+    },
 ];
-
 export default function PurchaseRequestSummary({ onViewDetails, onCreateNew }) {
-    const PAGE_ID_FOR_THIS_FORM = 8;
+    const PAGE_ID_FOR_THIS_FORM = 2026;
     const { hasAccess: isAdmin, isLoading: accessLoading } = useAdminAccessCheck(PAGE_ID_FOR_THIS_FORM);
     const [data, setData] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -48,11 +81,26 @@ export default function PurchaseRequestSummary({ onViewDetails, onCreateNew }) {
             if (!res.ok) throw new Error('Failed to fetch');
             
             const result = await res.json();
-            const formatted = result.map(row => ({
-                ...row,
-                FormattedRequestId: `GTI-${new Date(row.ReqDate).getFullYear()}-RG-${row.RequestId}`,
-                DemandDate: row.DemandDate ? format(new Date(row.DemandDate), 'dd-MMM-yyyy') : '-',
-            }));
+            // const formatted = result.map(row => ({
+            //     ...row,
+            //     FormattedRequestId: `GTI-${new Date(row.ReqDate).getFullYear()}-RG-${row.RequestId}`,
+            //     DemandDate: row.DemandDate ? format(new Date(row.DemandDate), 'dd-MMM-yyyy') : '-',
+            // }));
+            const formatted = result.map(row => {
+                const hos = row.isHOSApproved === 1 || row.isHOSApproved === true;
+                const rec = row.isReceiverApproved === 1 || row.isReceiverApproved === true;
+                
+                let statusVal = 'Pending HOS';
+                if (hos && !rec) statusVal = 'Pending REC';
+                if (hos && rec) statusVal = 'Approved';
+
+                return {
+                    ...row,
+                    FormattedRequestId: `GTI-${new Date(row.ReqDate).getFullYear()}-RG-${row.RequestId}`,
+                    DemandDate: row.DemandDate ? format(new Date(row.DemandDate), 'dd-MMM-yyyy') : '-',
+                    Status: statusVal
+                };
+            });
             setData(formatted);
         } catch (error) {
             toast.error("Failed to load summary data.");
@@ -65,7 +113,44 @@ export default function PurchaseRequestSummary({ onViewDetails, onCreateNew }) {
     useEffect(() => {
         fetchSummary(dateRange.from, dateRange.to);
     }, []); 
-
+    const renderCell = (row, col) => {
+        if (col.key === 'Status') {
+            const hosApp = row.isHOSApproved === 1 || row.isHOSApproved === true;
+            const recApp = row.isReceiverApproved === 1 || row.isReceiverApproved === true;
+            
+            return (
+                <div className="flex items-center py-1">
+                    <div className="flex flex-col items-center w-10" title={hosApp ? `Approved by: ${row.HOSName || 'HOS'}` : "Pending HOS Approval"}>
+                        <div className={cn(
+                            "h-5 w-5 rounded-full flex items-center justify-center border-2 transition-all duration-300", 
+                            hosApp ? "bg-green-500 border-green-500 text-white" : "border-amber-500 text-amber-500 bg-amber-50"
+                        )}>
+                            {hosApp ? <Check size={12} strokeWidth={3} /> : <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></div>}
+                        </div>
+                        <span className="text-[9px] mt-1 font-bold text-muted-foreground uppercase">HOS</span>
+                    </div>
+                    <div className="relative h-[2px] w-8 bg-gray-200 mx-1 rounded-full overflow-hidden">
+                        <div className={cn(
+                            "absolute top-0 left-0 h-full bg-green-500 transition-all duration-500",
+                            hosApp ? "w-full" : "w-0"
+                        )}></div>
+                    </div>
+                    <div className="flex flex-col items-center w-10" title={recApp ? `Approved by: ${row.ReceiverName || 'Receiver'}` : "Pending Receiver Approval"}>
+                        <div className={cn(
+                            "h-5 w-5 rounded-full flex items-center justify-center border-2 transition-all duration-300", 
+                            recApp ? "bg-green-500 border-green-500 text-white" : 
+                            (hosApp ? "border-amber-500 text-amber-500 bg-amber-50" : "border-gray-300 bg-gray-50")
+                        )}>
+                            {recApp ? <Check size={12} strokeWidth={3} /> : 
+                             (hosApp ? <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></div> : null)}
+                        </div>
+                        <span className="text-[9px] mt-1 font-bold text-muted-foreground uppercase">REC</span>
+                    </div>
+                </div>
+            );
+        }
+        return row[col.key];
+    };
     const handleApplyFilter = () => {
         if (dateRange?.from && dateRange?.to) {
             fetchSummary(dateRange.from, dateRange.to);
@@ -141,6 +226,7 @@ export default function PurchaseRequestSummary({ onViewDetails, onCreateNew }) {
                     columns={summaryColumns} 
                     data={data} 
                     onRowClick={(row) => onViewDetails(row)} 
+                    renderCell={renderCell}
                 />
             )}
         </div>

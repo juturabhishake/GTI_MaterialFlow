@@ -14,7 +14,22 @@ const SingleSelectCombobox = ({ options, selected, onSelectedChange, placeholder
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild><Button variant="outline" className="w-full justify-between h-9 px-3 font-normal text-sm">{selectedLabel || placeholder}<ChevronsUpDown className="h-4 w-4 ml-2 shrink-0 opacity-50" /></Button></PopoverTrigger>
-            <PopoverContent className="w-[200px] p-0" align="start"><Command><CommandInput placeholder="Search..." /><CommandList><CommandEmpty>No results.</CommandEmpty><CommandGroup>{options.map(o => (<CommandItem key={o.value} onSelect={() => { onSelectedChange(o.value); setOpen(false); }}>{o.label}</CommandItem>))}</CommandGroup></CommandList></Command></PopoverContent>
+            <PopoverContent className="w-[200px] p-0" align="start">
+                <Command><CommandInput placeholder="Search..." />
+                <CommandList>
+                    <CommandEmpty>No results.</CommandEmpty>
+                    <CommandGroup>
+                        {options.map(o => 
+                            (<CommandItem 
+                                key={o.value} 
+                                onSelect={() => { onSelectedChange(o.value); setOpen(false); }}>
+                                    {o.label}
+                            </CommandItem>
+                        ))}
+                    </CommandGroup>
+                </CommandList>
+                </Command>
+            </PopoverContent>
         </Popover>
     );
 };
@@ -40,7 +55,70 @@ const ColumnFilterPopover = ({ column, data, activeFilters, onFilterChange }) =>
     const handleSelectAll = () => onFilterChange(column.key, options.map(opt => opt.value));
     const handleClear = () => onFilterChange(column.key, []);
     return (
-        <Popover><PopoverTrigger asChild><Button variant="ghost" size="icon" className={`h-6 w-6 ml-1 ${selectedValues.length > 0 ? 'text-primary bg-primary/10' : ''}`} onClick={(e) => e.stopPropagation()}><Filter className="h-3 w-3" /></Button></PopoverTrigger><PopoverContent className="w-56 p-0" align="start"><Command><CommandInput placeholder={`Filter ${column.label}...`} /><CommandList><CommandEmpty>No results found.</CommandEmpty><CommandGroup><div className='flex flex-row justify-between gap-2 items-center px-2 py-2 border-b'><CommandItem onSelect={handleSelectAll} className="font-medium cursor-pointer w-full justify-center">Select All</CommandItem><CommandItem onSelect={handleClear} className="font-medium cursor-pointer p-2"><X className="h-4 w-4 text-destructive" /></CommandItem></div></CommandGroup><CommandGroup className="max-h-60 overflow-y-auto">{options.map(option => (<CommandItem key={option.value} onSelect={() => handleSelect(option.value)}><Check className={cn("mr-2 h-4 w-4", selectedValues.includes(option.value) ? "opacity-100" : "opacity-0")} /><span>{option.label}</span></CommandItem>))}</CommandGroup>{selectedValues.length > 0 && (<><CommandSeparator /><CommandGroup><CommandItem onSelect={() => onFilterChange(column.key, [])} className="text-destructive justify-center">Clear Filter</CommandItem></CommandGroup></>)}</CommandList></Command></PopoverContent></Popover>
+        <Popover>
+            <PopoverTrigger asChild>
+                <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className={`h-6 w-6 ml-1 ${selectedValues.length > 0 ? 'text-primary bg-primary/10' : ''}`} 
+                    onClick={(e) => e.stopPropagation()}
+                >
+                    <Filter className="h-3 w-3" />
+                </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-56 p-0" align="center">
+                <Command>
+                    <CommandInput placeholder={`Filter ${column.label}...`} />
+                    <CommandList>
+                        <CommandEmpty>No results found.</CommandEmpty>
+                        <CommandGroup>
+                            <div className='flex flex-row justify-between gap-2 items-center px-2 py-2 border-b'>
+                                <CommandItem 
+                                    onSelect={handleSelectAll} 
+                                    className="font-medium cursor-pointer w-full justify-center"
+                                >
+                                    Select All
+                                </CommandItem>
+                                <CommandItem 
+                                    onSelect={handleClear} 
+                                    className="font-medium cursor-pointer p-2"
+                                >
+                                        <X className="h-4 w-4 text-destructive" />
+                                </CommandItem>
+                            </div>
+                        </CommandGroup>
+                        <CommandGroup 
+                            className="max-h-60 overflow-y-auto"
+                        >
+                                {options.map(option => 
+                                    (<CommandItem 
+                                        key={option.value} 
+                                        onSelect={() => 
+                                            handleSelect(option.value)}>
+                                                <Check className={cn("mr-2 h-4 w-4", selectedValues.includes(option.value) ? "opacity-100" : "opacity-0")} />
+                                                {/* <span>{option.label}</span> */}
+                                                {column.renderFilterOption ? column.renderFilterOption(option.value) : <span>{option.label}</span>}
+                                    </CommandItem>
+                                ))}
+                        </CommandGroup>
+                            {selectedValues.length > 0 && 
+                                (
+                                    <>
+                                        <CommandSeparator />
+                                        <CommandGroup>
+                                            <CommandItem 
+                                                onSelect={() => onFilterChange(column.key, [])} 
+                                                className="text-destructive justify-center"
+                                            >
+                                                Clear Filter
+                                            </CommandItem>
+                                        </CommandGroup>
+                                    </>
+                                )}
+                    </CommandList>
+                </Command>
+            </PopoverContent>
+        </Popover>
     );
 };
 
