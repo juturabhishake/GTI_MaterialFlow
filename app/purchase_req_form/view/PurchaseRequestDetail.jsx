@@ -61,13 +61,13 @@ const detailColumns = [
   { key: "OrderQty", label: "Order Qty", filterable: true, hidden: false },
   {
     key: "good_parts_qty",
-    label: "Good Order Qty",
+    label: "Good Parts",
     filterable: true,
     hidden: false,
   },
   {
     key: "rejected_parts_qty",
-    label: "Rejected Order Qty",
+    label: "Rejected Parts",
     filterable: true,
     hidden: false,
   },
@@ -313,6 +313,14 @@ export default function PurchaseRequestDetail({ request, onBack }) {
           approvalData?.is_Final_HOS_Approval !== undefined
             ? approvalData.is_Final_HOS_Approval
             : row.is_Final_HOS_Approval,
+        Final_HOS_Name:
+          approvalData?.Final_HOS_Name !== undefined
+            ? approvalData.Final_HOS_Name
+            : row.Final_HOS_Name,
+        Final_HOS_empid:
+          approvalData?.Final_HOS_empid !== undefined
+            ? approvalData.Final_HOS_empid
+            : row.Final_HOS_empid,
       }));
       const response = await fetch("/api/purchaserequest/upsert", {
         method: "POST",
@@ -413,14 +421,29 @@ export default function PurchaseRequestDetail({ request, onBack }) {
       Final_HOS_empid: currentUser.empId,
     });
   };
+  //   const handleRowChange = (tempId, field, value) => {
+  //     setRows((prev) =>
+  //       prev.map((row) =>
+  //         row.tempId === tempId ? { ...row, [field]: value } : row,
+  //       ),
+  //     );
+  //   };
   const handleRowChange = (tempId, field, value) => {
     setRows((prev) =>
-      prev.map((row) =>
-        row.tempId === tempId ? { ...row, [field]: value } : row,
-      ),
+      prev.map((row) => {
+        if (row.tempId === tempId) {
+          const updatedRow = { ...row, [field]: value };
+          if (field === "OrderQty" || field === "good_parts_qty") {
+            const order = parseFloat(updatedRow.OrderQty) || 0;
+            const good = parseFloat(updatedRow.good_parts_qty) || 0;
+            updatedRow.rejected_parts_qty = order - good;
+          }
+          return updatedRow;
+        }
+        return row;
+      }),
     );
   };
-
   const handleRemoveRow = async (row) => {
     if (row.Id > 0) {
       try {
@@ -483,6 +506,13 @@ export default function PurchaseRequestDetail({ request, onBack }) {
             />
           </PopoverContent>
         </Popover>
+      );
+    }
+    if (col.key === "rejected_parts_qty") {
+      return (
+        <span className="text-xs px-2 py-1 block min-h-[1.75rem] font-medium text-muted-foreground bg-muted/30 rounded">
+          {row[col.key] ?? 0}
+        </span>
       );
     }
     // return <Input className="h-7 text-xs min-w-[80px]" value={row[col.key] || ''} onChange={e => handleRowChange(row.tempId, col.key, e.target.value)} type={col.key.includes('Qty') ? "number" : "text"} />;
