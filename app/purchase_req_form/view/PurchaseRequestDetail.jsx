@@ -71,6 +71,24 @@ const detailColumns = [
     filterable: true,
     hidden: false,
   },
+  {
+    key: "Completed_parts_qty",
+    label: "Completed Parts",
+    filterable: true,
+    hidden: false,
+  },
+  {
+    key: "Proceed_to_Complete",
+    label: "Proceed",
+    filterable: false,
+    hidden: false,
+  },
+  {
+    key: "is_Completed",
+    label: "Status",
+    filterable: false,
+    hidden: false,
+  },
   { key: "CheckNGQty", label: "Check NG", filterable: true, hidden: true },
   {
     key: "DetermineOrderQty",
@@ -226,15 +244,27 @@ export default function PurchaseRequestDetail({ request, onBack }) {
     rows.length > 0 ? rows[0].isReceiverApproved : false;
   const is_Final_HOS_Approval =
     rows.length > 0 ? rows[0].is_Final_HOS_Approval : false;
+  const isAuditor = currentUser.role === "Auditor";
+  const isSentToCoating = rows.length > 0 ? rows[0].Send_to_coating : false;
+  // const isFormEditable =
+  //   !request ||
+  //   isAdmin ||
+  //   (currentUser.role === "HOS" && !isHOSApproved) ||
+  //   (currentUser.role === "Res" && isHOSApproved && !isReceiverApproved) ||
+  //   (currentUser.role === "HOS" &&
+  //     isHOSApproved &&
+  //     isReceiverApproved &&
+  //     !is_Final_HOS_Approval);
   const isFormEditable =
     !request ||
     isAdmin ||
     (currentUser.role === "HOS" && !isHOSApproved) ||
     (currentUser.role === "Res" && isHOSApproved && !isReceiverApproved) ||
-    (currentUser.role === "HOS" &&
-      isHOSApproved &&
-      isReceiverApproved &&
-      !is_Final_HOS_Approval);
+    (isAuditor && !isSentToCoating);
+  
+  const canCompleteAll =
+    rows.length > 0 &&
+    rows.every((r) => r.is_Completed === true || r.is_Completed === 1);
   const handleAddItem = async (itemCode) => {
     if (rows.some((row) => row.MaterialCode === itemCode)) {
       toast.info(`Item ${itemCode} already exists.`);
@@ -321,6 +351,41 @@ export default function PurchaseRequestDetail({ request, onBack }) {
           approvalData?.Final_HOS_empid !== undefined
             ? approvalData.Final_HOS_empid
             : row.Final_HOS_empid,
+        Completed_all:
+          approvalData?.Completed_all !== undefined
+            ? approvalData.Completed_all
+            : row.Completed_all,
+        Completed_all_name:
+          approvalData?.Completed_all_name !== undefined
+            ? approvalData.Completed_all_name
+            : row.Completed_all_name,
+        Completed_all_empid:
+          approvalData?.Completed_all_empid !== undefined
+            ? approvalData.Completed_all_empid
+            : row.Completed_all_empid,
+        Completed_all_at:
+          approvalData?.Completed_all_at !== undefined
+            ? format(new Date(approvalData.Completed_all_at), "yyyy-MM-dd")
+            : row.Completed_all_at,
+        Send_to_coating:
+          approvalData?.Send_to_coating !== undefined
+            ? approvalData.Send_to_coating
+            : row.Send_to_coating,
+        Send_by_name:
+          approvalData?.Send_by_name !== undefined
+            ? approvalData.Send_by_name
+            : row.Send_by_name,
+        Send_by_empid:
+          approvalData?.Send_by_empid !== undefined
+            ? approvalData.Send_by_empid
+            : row.Send_by_empid,
+        Send_at:
+          approvalData?.Send_at !== undefined
+            ? format(new Date(approvalData.Send_at), "yyyy-MM-dd")
+            : row.Send_at,
+        Completed_by_at: row.Completed_by_at
+          ? format(new Date(row.Completed_by_at), "yyyy-MM-dd")
+          : null,
       }));
       const response = await fetch("/api/purchaserequest/upsert", {
         method: "POST",
@@ -428,16 +493,45 @@ export default function PurchaseRequestDetail({ request, onBack }) {
   //       ),
   //     );
   //   };
-  const handleRowChange = (tempId, field, value) => {
+  // const handleRowChange = (tempId, field, value) => {
+  //   setRows((prev) =>
+  //     prev.map((row) => {
+  //       if (row.tempId === tempId) {
+  //         const updatedRow = { ...row, [field]: value };
+  //         if (field === "OrderQty" || field === "good_parts_qty") {
+  //           const order = parseFloat(updatedRow.OrderQty) || 0;
+  //           const good = parseFloat(updatedRow.good_parts_qty) || 0;
+  //           updatedRow.rejected_parts_qty = order - good;
+  //         }
+  //         return updatedRow;
+  //       }
+  //       return row;
+  //     }),
+  //   );
+  // };
+
+  const handleRowChange = (tempId, fieldOrObject, value) => {
     setRows((prev) =>
       prev.map((row) => {
         if (row.tempId === tempId) {
-          const updatedRow = { ...row, [field]: value };
-          if (field === "OrderQty" || field === "good_parts_qty") {
+          let updatedRow;
+
+          if (typeof fieldOrObject === "object") {
+            updatedRow = { ...row, ...fieldOrObject };
+          } else {
+            updatedRow = { ...row, [fieldOrObject]: value };
+          }
+
+          if (
+            fieldOrObject === "OrderQty" ||
+            fieldOrObject === "good_parts_qty" ||
+            fieldOrObject?.good_parts_qty !== undefined
+          ) {
             const order = parseFloat(updatedRow.OrderQty) || 0;
             const good = parseFloat(updatedRow.good_parts_qty) || 0;
             updatedRow.rejected_parts_qty = order - good;
           }
+
           return updatedRow;
         }
         return row;
@@ -460,69 +554,237 @@ export default function PurchaseRequestDetail({ request, onBack }) {
     }
   };
 
+  // const renderCell = (row, col) => {
+  //   const isLocked = !isFormEditable && row.isSave === 1;
+  //   const forceLockForAuditor =
+  //     isAuditor &&
+  //     !["Completed_parts_qty", "Proceed_to_Complete", "is_Completed"].includes(
+  //       col.key,
+  //     );
+  //   if (col.key === "Proceed_to_Complete") {
+  //     return (
+  //       <input
+  //         type="checkbox"
+  //         disabled={!isAuditor || isSentToCoating}
+  //         checked={!!row.Proceed_to_Complete}
+  //         onChange={(e) =>
+  //           handleRowChange(row.tempId, "Proceed_to_Complete", e.target.checked)
+  //         }
+  //       />
+  //     );
+  //   }
+
+  //   if (col.key === "is_Completed") {
+  //     const canClickComplete =
+  //       Number(row.good_parts_qty) === Number(row.Completed_parts_qty) ||
+  //       row.Proceed_to_Complete;
+
+  //     if (row.is_Completed)
+  //       return (
+  //         <span className="text-green-600 font-bold flex items-center gap-1 text-xs">
+  //           <Check size={14} /> Done
+  //         </span>
+  //       );
+
+  //     return (
+  //       <Button
+  //         size="sm"
+  //         variant="outline"
+  //         className="h-7 text-[10px]"
+  //         disabled={!isAuditor || !canClickComplete || isSentToCoating}
+  //         onClick={() => {
+  //           handleRowChange(row.tempId, "is_Completed", true);
+  //           handleRowChange(
+  //             row.tempId,
+  //             "Completed_by_empid",
+  //             currentUser.empId,
+  //           );
+  //           handleRowChange(row.tempId, "Completed_by_name", currentUser.name);
+  //           handleRowChange(row.tempId, "Completed_by_at", new Date());
+  //         }}
+  //       >
+  //         Complete
+  //       </Button>
+  //     );
+  //   }
+
+  //   if (col.key === "Completed_parts_qty") {
+  //     if (isAuditor && !isSentToCoating) {
+  //       return (
+  //         <Input
+  //           className="h-7 text-xs w-20"
+  //           type="number"
+  //           value={row[col.key] || ""}
+  //           onChange={(e) =>
+  //             handleRowChange(row.tempId, col.key, e.target.value)
+  //           }
+  //         />
+  //       );
+  //     }
+  //   }
+  //   if (
+  //     col.key === "MaterialCode" ||
+  //     col.key === "ItemSpecification" ||
+  //     col.key === "ProjectName"
+  //   ) {
+  //     return (
+  //       <span
+  //         className="text-xs truncate block max-w-[200px]"
+  //         title={row[col.key]}
+  //       >
+  //         {row[col.key]}
+  //       </span>
+  //     );
+  //   }
+  //   // if (col.key === 'DemandDate') {
+  //   //     return <Popover><PopoverTrigger asChild><Button variant="outline" size="sm" className="h-7 text-[10px] px-2">{row.DemandDate ? format(row.DemandDate, "dd-MMM-yy") : "Pick"}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={row.DemandDate} onSelect={d => handleRowChange(row.tempId, 'DemandDate', d)} /></PopoverContent></Popover>;
+  //   // }
+  //   if (col.key === "DemandDate") {
+  //     if (isLocked) {
+  //       return (
+  //         <span className="text-xs px-2 block">
+  //           {row.DemandDate ? format(row.DemandDate, "dd-MMM-yy") : "-"}
+  //         </span>
+  //       );
+  //     }
+  //     return (
+  //       <Popover>
+  //         <PopoverTrigger asChild>
+  //           <Button
+  //             variant="outline"
+  //             size="sm"
+  //             className="h-7 text-[10px] px-2"
+  //           >
+  //             {row.DemandDate ? format(row.DemandDate, "dd-MMM-yy") : "Pick"}
+  //           </Button>
+  //         </PopoverTrigger>
+  //         <PopoverContent className="w-auto p-0">
+  //           <Calendar
+  //             mode="single"
+  //             selected={row.DemandDate}
+  //             onSelect={(d) => handleRowChange(row.tempId, "DemandDate", d)}
+  //           />
+  //         </PopoverContent>
+  //       </Popover>
+  //     );
+  //   }
+  //   if (col.key === "rejected_parts_qty") {
+  //     return (
+  //       <span className="text-xs px-2 py-1 block min-h-[1.75rem] font-medium text-muted-foreground bg-muted/30 rounded">
+  //         {row[col.key] ?? 0}
+  //       </span>
+  //     );
+  //   }
+  //   // return <Input className="h-7 text-xs min-w-[80px]" value={row[col.key] || ''} onChange={e => handleRowChange(row.tempId, col.key, e.target.value)} type={col.key.includes('Qty') ? "number" : "text"} />;
+  //   if (isLocked) {
+  //     return (
+  //       <span className="text-xs px-2 py-1 block min-h-[1.75rem]">
+  //         {row[col.key]}
+  //       </span>
+  //     );
+  //   }
+  //   return (
+  //     <Input
+  //       className="h-7 text-xs min-w-[80px]"
+  //       value={row[col.key] || ""}
+  //       onChange={(e) => handleRowChange(row.tempId, col.key, e.target.value)}
+  //       type={col.key.includes("Qty") ? "number" : "text"}
+  //     />
+  //   );
+  // };
+
+  // const actionColumn = (row) => (
+  //     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveRow(row)}><Trash2 className="h-3.5 w-3.5" /></Button>
+  // );
   const renderCell = (row, col) => {
     const isLocked = !isFormEditable && row.isSave === 1;
-    if (
-      col.key === "MaterialCode" ||
-      col.key === "ItemSpecification" ||
-      col.key === "ProjectName"
-    ) {
+
+    const forceLockForAuditor =
+      isAuditor &&
+      !["Completed_parts_qty", "Proceed_to_Complete", "is_Completed"].includes(
+        col.key,
+      );
+    const isGoodPartsInvalid =
+      !row.good_parts_qty || Number(row.good_parts_qty) <= 0;
+
+    if (col.key === "Proceed_to_Complete") {
+      const isMatched =
+        Number(row.good_parts_qty) > 0 &&
+        Number(row.good_parts_qty) <= Number(row.Completed_parts_qty);
       return (
-        <span
-          className="text-xs truncate block max-w-[200px]"
-          title={row[col.key]}
-        >
-          {row[col.key]}
-        </span>
+        <input
+          type="checkbox"
+          disabled={!isAuditor || isSentToCoating || isMatched}
+          checked={!!row.Proceed_to_Complete}
+          onChange={(e) =>
+            handleRowChange(row.tempId, "Proceed_to_Complete", e.target.checked)
+          }
+        />
       );
     }
-    // if (col.key === 'DemandDate') {
-    //     return <Popover><PopoverTrigger asChild><Button variant="outline" size="sm" className="h-7 text-[10px] px-2">{row.DemandDate ? format(row.DemandDate, "dd-MMM-yy") : "Pick"}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={row.DemandDate} onSelect={d => handleRowChange(row.tempId, 'DemandDate', d)} /></PopoverContent></Popover>;
-    // }
-    if (col.key === "DemandDate") {
-      if (isLocked) {
+
+    if (col.key === "is_Completed") {
+      const canClickComplete =
+        Number(row.good_parts_qty) === Number(row.Completed_parts_qty) ||
+        row.Proceed_to_Complete;
+
+      if (row.is_Completed)
         return (
-          <span className="text-xs px-2 block">
-            {row.DemandDate ? format(row.DemandDate, "dd-MMM-yy") : "-"}
+          <span className="text-green-600 font-bold text-xs">
+            <Check className="inline h-3 w-3" /> Done
+          </span>
+        );
+
+      return (
+        <Button
+          size="sm"
+          variant="outline"
+          className="h-7 text-[10px]"
+          disabled={!isAuditor || !canClickComplete || isSentToCoating}
+          onClick={() => {
+            handleRowChange(row.tempId, {
+              is_Completed: true,
+              Completed_by_empid: currentUser.empId,
+              Completed_by_name: currentUser.name,
+              Completed_by_at: new Date(),
+            });
+            toast.success("Row marked as complete. Remember to Save.");
+          }}
+        >
+          Complete
+        </Button>
+      );
+    }
+
+    if (col.key === "Completed_parts_qty") {
+      return (
+        <Input
+          className="h-7 text-xs w-20"
+          type="number"
+          disabled={!isAuditor || isSentToCoating || isGoodPartsInvalid}
+          value={row[col.key] || ""}
+          onChange={(e) => handleRowChange(row.tempId, col.key, e.target.value)}
+        />
+      );
+    }
+
+    if (isLocked || forceLockForAuditor) {
+      if (col.key === "DemandDate") {
+        return (
+          <span className="text-xs px-2">
+            {row.DemandDate
+              ? format(new Date(row.DemandDate), "dd-MMM-yy")
+              : "-"}
           </span>
         );
       }
       return (
-        <Popover>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-7 text-[10px] px-2"
-            >
-              {row.DemandDate ? format(row.DemandDate, "dd-MMM-yy") : "Pick"}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-0">
-            <Calendar
-              mode="single"
-              selected={row.DemandDate}
-              onSelect={(d) => handleRowChange(row.tempId, "DemandDate", d)}
-            />
-          </PopoverContent>
-        </Popover>
-      );
-    }
-    if (col.key === "rejected_parts_qty") {
-      return (
-        <span className="text-xs px-2 py-1 block min-h-[1.75rem] font-medium text-muted-foreground bg-muted/30 rounded">
-          {row[col.key] ?? 0}
-        </span>
-      );
-    }
-    // return <Input className="h-7 text-xs min-w-[80px]" value={row[col.key] || ''} onChange={e => handleRowChange(row.tempId, col.key, e.target.value)} type={col.key.includes('Qty') ? "number" : "text"} />;
-    if (isLocked) {
-      return (
         <span className="text-xs px-2 py-1 block min-h-[1.75rem]">
-          {row[col.key]}
+          {row[col.key] || "-"}
         </span>
       );
     }
+
     return (
       <Input
         className="h-7 text-xs min-w-[80px]"
@@ -532,12 +794,9 @@ export default function PurchaseRequestDetail({ request, onBack }) {
       />
     );
   };
-
-  // const actionColumn = (row) => (
-  //     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveRow(row)}><Trash2 className="h-3.5 w-3.5" /></Button>
-  // );
   const actionColumn = (row) => {
-    const isLocked = !isFormEditable && row.isSave === 1;
+    //const isLocked = !isFormEditable && row.isSave === 1;
+    const isLocked = (!isFormEditable && row.isSave === 1) || isAuditor;
     return (
       <Button
         variant="ghost"
@@ -600,6 +859,23 @@ export default function PurchaseRequestDetail({ request, onBack }) {
           </h1>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {isAuditor && (
+            <Button
+              variant="outline"
+              //disabled={!canCompleteAll }
+              onClick={() =>
+                handleSave({
+                  Completed_all: true,
+                  Completed_all_name: currentUser.name,
+                  Completed_all_empid: currentUser.empId,
+                  Completed_all_at: new Date(),
+                })
+              }
+              className="border-green-600 text-green-600 hover:bg-green-50"
+            >
+              <Check className="mr-2 h-4 w-4" /> Complete All
+            </Button>
+          )}
           {request && (
             <Button
               variant="secondary"
@@ -754,6 +1030,47 @@ export default function PurchaseRequestDetail({ request, onBack }) {
               </div>
               <div className="bg-muted/50 rounded-lg p-4 border border-border flex flex-col justify-between">
                 <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                  Coating Status
+                </h4>
+                {isSentToCoating ? (
+                  <div className="text-blue-600 bg-blue-50 px-3 py-2 rounded-md border border-blue-200">
+                    <p className="font-semibold flex items-center gap-2">
+                      <Check size={16} /> Sent to Coating
+                    </p>
+                    <p className="text-xs mt-1 opacity-80">
+                      By: {rows[0]?.Send_by_name} at{" "}
+                      {rows[0]?.Send_at
+                        ? format(new Date(rows[0].Send_at), "dd-MMM-yy")
+                        : ""}
+                    </p>
+                  </div>
+                ) : isAuditor ? (
+                  <button
+                    disabled={!canCompleteAll}
+                    onClick={() => {
+                      if (
+                        confirm("Send to coating? This will lock your access.")
+                      ) {
+                        handleSave({
+                          Send_to_coating: true,
+                          Send_by_name: currentUser.name,
+                          Send_by_empid: currentUser.empId,
+                          Send_at: new Date(),
+                        });
+                      }
+                    }}
+                    className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-md transition-colors font-medium disabled:opacity-50"
+                  >
+                    <Printer size={16} /> Send to Coating
+                  </button>
+                ) : (
+                  <div className="flex items-center justify-center gap-2 text-muted-foreground bg-background py-2 rounded-md border border-border cursor-not-allowed">
+                    <XCircle size={16} /> Pending Auditor
+                  </div>
+                )}
+              </div>
+              {/* <div className="bg-muted/50 rounded-lg p-4 border border-border flex flex-col justify-between">
+                <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
                   Final HOS Approval
                 </h4>
                 {is_Final_HOS_Approval ? (
@@ -789,7 +1106,7 @@ export default function PurchaseRequestDetail({ request, onBack }) {
                     <XCircle size={16} /> Pending (Final HOS Only)
                   </div>
                 )}
-              </div>
+              </div> */}
             </div>
           </div>
         </div>
