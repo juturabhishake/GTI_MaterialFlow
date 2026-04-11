@@ -6,7 +6,7 @@ import { generateCuttingToolPDF } from './cuttingToolsPdf';
 import { useAdminAccessCheck } from '@/lib/checkAdmin';
 import SecureLS from 'secure-ls';
 import { UserCheck, XCircle } from 'lucide-react';
-
+import { useAccessCheck } from '@/lib/useAccessCheck';
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
 const Calendar = ({ value, onChange }) => {
@@ -108,6 +108,7 @@ const InputField = ({ label, value, onChange, type = "text", disabled = false, e
 const CuttingToolEditForm = ({ item, onSave, onCancel, onDelete }) => {
   const PAGE_ID_FOR_THIS_FORM = 2032;
   const { hasAccess: isAdmin, isLoading: accessLoading } = useAdminAccessCheck(PAGE_ID_FOR_THIS_FORM);
+    const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
   const [loadingItems, setLoadingItems] = useState(false);
   const [itemsList, setItemsList] = useState([]);
   const [currentUser, setCurrentUser] = useState({ empId: '', name: '', role: '' });

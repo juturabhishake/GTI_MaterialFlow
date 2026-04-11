@@ -14,8 +14,10 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from "@/components/ui/calendar";
 import { Textarea } from "@/components/ui/textarea";
-
+import { useAccessCheck } from '@/lib/useAccessCheck';
 const WalterBasicEntry = () => {
+    const PAGE_ID_FOR_THIS_FORM = 2027;
+    const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
     const initialFormState = {
         TransactionDate: new Date(),
         Shift: '', ItemCode: '', SizeSpecifications: '', FullOrderQuantity: '', OKQuantity: '', NGQuantity: '',

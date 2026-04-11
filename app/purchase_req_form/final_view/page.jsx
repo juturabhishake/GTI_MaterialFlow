@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Loader2, FileSpreadsheet, ListFilter, CalendarIcon, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, Check, FileText, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -59,17 +59,17 @@ const FilterPopover = ({ columnKey, title, data, selectedValues, onSelect, onSel
     );
 };
 
-export default function PurchaseReceiptsView() {
-    const PAGE_ID_FOR_THIS_FORM = 2023;
+export default function ReturnedToToolmakingReport() {
+    const PAGE_ID_FOR_THIS_FORM = 2035;
     const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'default' });
     const [columnFilters, setColumnFilters] = useState({});
     const [currentPage, setCurrentPage] = useState(1);
-    const [pageSize, setPageSize] = useState(10);
+    const [pageSize, setPageSize] = useState(20);
     const [jumpPage, setJumpPage] = useState("1");
-    const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 7), to: new Date() });
+    const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 30), to: new Date() });
     const [exportState, setExportState] = useState('idle');
     const [isMobile, setIsMobile] = useState(false);
 
@@ -88,12 +88,15 @@ export default function PurchaseReceiptsView() {
                 fromDate: format(dateRange.from, 'yyyy-MM-dd'),
                 toDate: format(dateRange.to, 'yyyy-MM-dd')
             });
-            const res = await fetch(`/api/purchase-receipts/get?${params.toString()}`);
+            const res = await fetch(`/api/purchaserequest/get-returns-report?${params.toString()}`);
             if (res.ok) {
                 setData(await res.json());
                 setCurrentPage(1);
             }
-        } catch (e) { console.error(e); } finally { setLoading(false); }
+        } catch (e) { 
+        } finally { 
+            setLoading(false); 
+        }
     };
 
     useEffect(() => { fetchList(); }, [dateRange]);
@@ -150,9 +153,9 @@ export default function PurchaseReceiptsView() {
         return result;
     }, [data, columnFilters, sortConfig]);
 
-    const totalItems = processedData.length;
-    const totalPages = pageSize === 'All' ? 1 : Math.ceil(totalItems / pageSize) || 1;
-    const paginatedData = pageSize === 'All' ? processedData : processedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+    const limit = pageSize === 'All' ? (processedData.length || 1) : Number(pageSize);
+    const totalPages = Math.ceil(processedData.length / limit) || 1;
+    const paginatedData = processedData.slice((currentPage - 1) * limit, currentPage * limit);
 
     const handlePageChange = (newPage) => {
         if(newPage >= 1 && newPage <= totalPages) {
@@ -172,7 +175,7 @@ export default function PurchaseReceiptsView() {
         if (processedData.length === 0) return;
         setExportState('loading');
         try {
-            await exportToExcel(processedData, "PurchaseReceipts"); 
+            await exportToExcel(processedData, "ReturnedToToolmaking_Report"); 
             setExportState('success');
             setTimeout(() => setExportState('idle'), 2000);
         } catch (error) {
@@ -184,20 +187,41 @@ export default function PurchaseReceiptsView() {
     const renderVal = (val) => (val === null || val === undefined || val === '') ? '-' : val;
 
     const columns = [
-        { key: 'Rec_Dt', label: 'Receipt Date', w: 'w-[120px]' },
-        { key: 'PO_No', label: 'PO Number', w: 'w-[150px]' },
-        { key: 'ItemCode', label: 'Item Code', w: 'w-[150px]' },
-        { key: 'Item_Desc', label: 'Description', w: 'min-w-[250px]' },
-        { key: 'GRN', label: 'GRN', w: 'w-[150px]' },
-        { key: 'InvoiceNo', label: 'Invoice No', w: 'w-[150px]' },
-        { key: 'Recv_Qty', label: 'Recv Qty', w: 'w-[100px]' }
+        { key: 'RequestId', label: 'Request ID', w: 'w-[150px]' },
+        { key: 'MaterialCode', label: 'Material Code', w: 'w-[120px]' },
+        { key: 'ItemSpecification', label: 'Specification', w: 'min-w-[150px]' },
+        { key: 'ProjectName', label: 'Project Name', w: 'w-[150px]' },
+        
+        { key: 'DemandDate', label: 'Demand Date', w: 'w-[120px]' },
+        { key: 'Remarks', label: 'Remarks', w: 'w-[150px]' },
+        { key: 'OrderQty', label: 'Order Qty', w: 'w-[100px]' },
+        
+        { key: 'ReceiverName', label: 'Receiver', w: 'w-[150px]' },
+        { key: 'Receiver_remarks', label: 'Receiver Remarks', w: 'w-[150px]' },
+        
+        { key: 'good_parts_qty', label: 'Rcv Good Parts', w: 'w-[120px]' },
+        { key: 'rejected_parts_qty', label: 'Rcv Rejected Parts', w: 'w-[120px]' },
+        
+        { key: 'Completed_parts_qty', label: 'Completed Qty', w: 'w-[120px]' },
+        { key: 'Completed_by_name', label: 'Completed By', w: 'w-[150px]' },
+        { key: 'Completed_by_at', label: 'Completed On', w: 'w-[120px]' },
+        
+        { key: 'Send_by_name', label: 'Sent to Coating By', w: 'w-[150px]' },
+        { key: 'Send_at', label: 'Sent On', w: 'w-[120px]' },
+        
+        { key: 'good_parts_by_coating', label: 'Coating Good Parts', w: 'w-[130px]' },
+        { key: 'rejected_parts_by_coating', label: 'Coating Rejected', w: 'w-[130px]' },
+        { key: 'comments_by_coating', label: 'Coating Comments', w: 'min-w-[180px]' },
+        
+        { key: 'Return_to_Toolmaking_by_name', label: 'Returned By', w: 'w-[150px]' },
+        { key: 'Return_to_Toolmaking_by_at', label: 'Returned On', w: 'w-[120px]' },
     ];
 
     return (
         <div className="@container/main flex flex-col h-screen overflow-hidden bg-background space-y-2 font-sans w-full">
-            <div className="flex flex-wrap items-start md:items-center justify-between bg-card p-4 rounded-lg shadow-sm border border-border gap-4">
+            <div className="flex-none flex flex-col md:flex-row items-start md:items-center justify-between bg-card p-4 rounded-lg shadow-sm border border-border gap-4">
                 <div>
-                    <h1 className="text-xl font-bold text-primary">Purchase Receipts</h1>
+                    <h1 className="text-xl font-bold text-primary">Final View</h1>
                 </div>
                 <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
                     <Button 
@@ -229,10 +253,11 @@ export default function PurchaseReceiptsView() {
                 <Card className="h-full border border-border rounded-md flex flex-col bg-card shadow-sm overflow-hidden">
                     <CardContent className="p-0 flex flex-col h-full">
                         <div className="flex-1 overflow-auto relative scrollbar-thin">
-                            <table className="w-full text-xs text-left border-collapse min-w-[1000px]">
+                            <table className="w-full text-xs text-left border-collapse min-w-[2500px]">
                                 <thead className="bg-primary text-primary-foreground uppercase font-bold text-[10px] sticky top-0 z-20 shadow-sm">
                                     <tr>
-                                        {columns.map((col, idx) => (
+                                        <th className="p-2 border-r border-primary-foreground/20 whitespace-nowrap bg-primary w-10 text-center">#</th>
+                                        {columns.map((col) => (
                                             <th key={col.key} className={cn("p-2 border-r border-primary-foreground/20 whitespace-nowrap bg-primary", col.w)}>
                                                 <div className="flex items-center justify-between group">
                                                     <div className="flex items-center cursor-pointer hover:text-yellow-200" onClick={() => handleSort(col.key)}>
@@ -247,26 +272,34 @@ export default function PurchaseReceiptsView() {
                                 <tbody className="divide-y divide-border">
                                     {loading ? (
                                         <tr>
-                                            <td colSpan={columns.length} className="h-[calc(100vh-240px)] text-center align-middle border-none">
+                                            <td colSpan={columns.length + 1} className="h-[calc(100vh-240px)] text-center align-middle border-none">
                                                 <div className="flex flex-col items-center justify-center h-full w-full">
                                                     <Loader2 className="h-10 w-10 text-primary animate-spin" />
                                                 </div>
                                             </td>
                                         </tr>
                                     ) : paginatedData.length > 0 ? paginatedData.map((row, i) => (
-                                        <tr key={i} className="hover:bg-muted/50 transition-colors group text-[11px]">
+                                        <tr key={row.Id} className="hover:bg-muted/50 transition-colors group text-[11px]">
+                                            <td className="p-2 border-r border-border text-center text-muted-foreground">
+                                                {((currentPage - 1) * limit) + i + 1}
+                                            </td>
                                             {columns.map(col => (
-                                                <td key={col.key} className={cn("p-2 border-r border-border", col.key === 'Item_Desc' && "max-w-[250px] truncate")} title={row[col.key]}>
-                                                    {col.key === 'Rec_Dt' && row[col.key] ? format(new Date(row[col.key]), 'yyyy-MM-dd') : renderVal(row[col.key])}
+                                                <td key={col.key} className={cn("p-2 border-r border-border", col.key === 'ItemSpecification' && "max-w-[200px] truncate")} title={row[col.key]}>
+                                                    {col.key === 'RequestId' ? `GTI-${new Date(row.ReqDate).getFullYear()}-RG-${row.RequestId}` : 
+                                                     ['DemandDate', 'Completed_by_at', 'Send_at', 'Return_to_Toolmaking_by_at'].includes(col.key) && row[col.key] ? (
+                                                        format(new Date(row[col.key]), 'dd-MM-yyyy')
+                                                    ) : (
+                                                        renderVal(row[col.key])
+                                                    )}
                                                 </td>
                                             ))}
                                         </tr>
                                     )) : (
                                         <tr>
-                                            <td colSpan={columns.length} className="h-[calc(100vh-240px)] text-center align-middle border-none">
+                                            <td colSpan={columns.length + 1} className="h-[calc(100vh-240px)] text-center align-middle border-none">
                                                 <div className="flex flex-col items-center justify-center h-full w-full text-muted-foreground">
                                                     <FileText className="h-10 w-10 opacity-20 mb-4" />
-                                                    <h3 className="text-lg font-semibold">No records found</h3>
+                                                    <h3 className="text-lg font-semibold">No records found for the selected date range</h3>
                                                 </div>
                                             </td>
                                         </tr>
@@ -274,7 +307,7 @@ export default function PurchaseReceiptsView() {
                                 </tbody>
                             </table>
                         </div>
-                        <div className="flex flex-wrap items-center justify-between p-2 border-t border-border bg-muted/20 gap-4">
+                        <div className="flex-none flex flex-col md:flex-row items-center justify-between p-2 border-t border-border bg-muted/20 gap-4">
                             <div className="flex items-center gap-2 text-xs text-muted-foreground">
                                 <span>Show</span>
                                 <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(v === 'All' ? 'All' : Number(v)); setCurrentPage(1); }}>
@@ -283,10 +316,15 @@ export default function PurchaseReceiptsView() {
                                         <SelectItem value="10">10</SelectItem>
                                         <SelectItem value="20">20</SelectItem>
                                         <SelectItem value="50">50</SelectItem>
+                                        <SelectItem value="100">100</SelectItem>
                                         <SelectItem value="All">All</SelectItem>
                                     </SelectContent>
                                 </Select>
                                 <span>rows</span>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                                {processedData.length > 0 ? ((currentPage - 1) * limit) + 1 : 0}-
+                                {Math.min(currentPage * limit, processedData.length)} of {processedData.length}
                             </div>
                             <div className="flex items-center gap-1">
                                 <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handlePageChange(1)} disabled={currentPage === 1}><ChevronsLeft className="h-3 w-3" /></Button>
@@ -296,8 +334,8 @@ export default function PurchaseReceiptsView() {
                                     <Input className="h-7 w-10 text-center text-xs p-0" value={jumpPage} onChange={(e) => setJumpPage(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handlePageChange(parseInt(jumpPage))} />
                                     <span className="text-xs text-muted-foreground">of {totalPages}</span>
                                 </div>
-                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages}><ChevronRight className="h-3 w-3" /></Button>
-                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages}><ChevronsRight className="h-3 w-3" /></Button>
+                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handlePageChange(currentPage + 1)} disabled={currentPage === totalPages || totalPages === 0}><ChevronRight className="h-3 w-3" /></Button>
+                                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handlePageChange(totalPages)} disabled={currentPage === totalPages || totalPages === 0}><ChevronsRight className="h-3 w-3" /></Button>
                             </div>
                         </div>
                     </CardContent>

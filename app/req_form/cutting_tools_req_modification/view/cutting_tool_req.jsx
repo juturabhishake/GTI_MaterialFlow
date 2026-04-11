@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from '@/lib/utils';
 import CuttingToolEditForm from './CuttingToolEditForm';
-
+import { useAccessCheck } from '@/lib/useAccessCheck';
 const allColumns = [
     { key: 'Id', label: 'ID', filterable: true, width: '80px' },
     { key: 'RequestDate', label: 'DATE', filterable: true, width: '120px' },
@@ -129,6 +129,8 @@ const FilterColumn = ({ column, data, columnFilters, setColumnFilters }) => {
 };
 
 export default function CuttingToolsViewPage() {
+    const PAGE_ID_FOR_THIS_FORM = 2032;
+    const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
     const [data, setData] = useState([]);
     const [isLoading, setIsLoading] = useState(true);
     const [viewMode, setViewMode] = useState('table');

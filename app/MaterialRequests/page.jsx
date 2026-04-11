@@ -11,6 +11,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { exportToExcel } from "@/components/exportUtils";
+import { useAccessCheck } from '@/lib/useAccessCheck';
 
 const FilterPopover = ({ columnKey, title, data, selectedValues, onSelect, onSelectAll, onClear }) => {
     const [open, setOpen] = useState(false);
@@ -60,6 +61,8 @@ const FilterPopover = ({ columnKey, title, data, selectedValues, onSelect, onSel
 };
 
 export default function MaterialRequestsView() {
+    const PAGE_ID_FOR_THIS_FORM = 2022;
+    const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'default' });

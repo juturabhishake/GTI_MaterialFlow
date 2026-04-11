@@ -9,7 +9,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { exportToExcel } from "@/components/exportUtils";
-
+import { useAccessCheck } from '@/lib/useAccessCheck';
 const FilterPopover = ({ columnKey, title, data, selectedValues, onSelect, onSelectAll, onClear }) => {
     const [open, setOpen] = useState(false);
     const uniqueValues = useMemo(() => {
@@ -58,6 +58,8 @@ const FilterPopover = ({ columnKey, title, data, selectedValues, onSelect, onSel
 };
 
 export default function AgingView() {
+    const PAGE_ID_FOR_THIS_FORM = 2024;
+    const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
     const [data, setData] = useState([]);
     const [loading, setLoading] = useState(false);
     const [sortConfig, setSortConfig] = useState({ key: null, direction: 'default' });

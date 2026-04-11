@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import SecureLS from "secure-ls";
 import { Check, X, Loader2, AlertCircle, Save, RefreshCw, Calendar as CalendarIcon, ChevronsUpDown, Search, ChevronLeft, ChevronRight } from 'lucide-react';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, startOfWeek, endOfWeek, addDays  } from 'date-fns';
-
+import { useAccessCheck } from '@/lib/useAccessCheck';
 const cn = (...classes) => classes.filter(Boolean).join(" ");
 
 const Calendar = ({ value, onChange }) => {
@@ -249,6 +249,8 @@ const InputField = ({ label, value, onChange, type = "text", disabled = false, p
 );
 
 const CuttingToolReq = () => {
+  const PAGE_ID_FOR_THIS_FORM = 2031;
+    const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
   const ls = useRef(null);
   const [loadingItems, setLoadingItems] = useState(false);
   const [itemsList, setItemsList] = useState([]);

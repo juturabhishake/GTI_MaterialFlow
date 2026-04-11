@@ -38,14 +38,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import DataTable from "./DataTable";
 import { useAdminAccessCheck } from "@/lib/checkAdmin";
-import { useAccessCheck } from '@/lib/useAccessCheck';
+
 const detailColumns = [
-  {
-    key: "Proceed_to_Complete",
-    label: "Proceed",
-    filterable: false,
-    hidden: false,
-  },
   {
     key: "MaterialCode",
     label: "Material Code",
@@ -64,31 +58,28 @@ const detailColumns = [
     filterable: true,
     hidden: false,
   },
-  { key: "OrderQty", label: "Order Qty", filterable: true, hidden: false },
-  {
-    key: "good_parts_qty",
-    label: "Good Parts",
-    filterable: true,
-    hidden: false,
-  },
-  {
-    key: "rejected_parts_qty",
-    label: "Rejected Parts",
-    filterable: true,
-    hidden: false,
-  },
-  {
-    key: "Completed_parts_qty",
-    label: "Completed Parts",
-    filterable: true,
-    hidden: false,
-  },
-  {
-    key: "is_Completed",
-    label: "Status",
-    filterable: false,
-    hidden: false,
-  },
+  { key: "OrderQty", label: "Completed Qty", filterable: true, hidden: false },
+  { key: "good_parts_by_coating", label: "Good Parts", filterable: true, hidden: false },
+  { key: "rejected_parts_by_coating", label: "Rejected Parts", filterable: true, hidden: false },
+  { key: "comments_by_coating", label: "Coating Comments", filterable: true, hidden: false },
+  // {
+  //   key: "Completed_parts_qty",
+  //   label: "Completed Parts",
+  //   filterable: true,
+  //   hidden: false,
+  // },
+  // {
+  //   key: "Proceed_to_Complete",
+  //   label: "Proceed",
+  //   filterable: false,
+  //   hidden: false,
+  // },
+  // {
+  //   key: "is_Completed",
+  //   label: "Status",
+  //   filterable: false,
+  //   hidden: false,
+  // },
   { key: "CheckNGQty", label: "Check NG", filterable: true, hidden: true },
   {
     key: "DetermineOrderQty",
@@ -167,7 +158,6 @@ export default function PurchaseRequestDetail({ request, onBack }) {
   const { hasAccess: isAdmin, isLoading: accessLoading } = useAdminAccessCheck(
     PAGE_ID_FOR_THIS_FORM,
   );
-  const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
   const [rows, setRows] = useState([]);
   const [date, setDate] = useState(
     request ? new Date(request.ReqDate) : new Date(),
@@ -198,11 +188,6 @@ export default function PurchaseRequestDetail({ request, onBack }) {
         role: ls.current.get("role") || "",
       });
     } catch (e) {}
-    console.log("Current User:", {
-      empId: ls.current.get("employee_id"),
-      name: ls.current.get("full_name"),
-      role: ls.current.get("role"),
-    });
   }, []);
   useEffect(() => {
     const fetchItems = async () => {
@@ -219,7 +204,7 @@ export default function PurchaseRequestDetail({ request, onBack }) {
   const fetchRequestData = async (reqId) => {
     setIsLoading(true);
     try {
-      const res = await fetch("/api/purchaserequest/get-by-id", {
+      const res = await fetch("/api/coating/get-by-id", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ requestId: reqId }),
@@ -275,8 +260,11 @@ export default function PurchaseRequestDetail({ request, onBack }) {
   const is_Final_HOS_Approval =
     rows.length > 0 ? rows[0].is_Final_HOS_Approval : false;
   const isAuditor = currentUser.role === "Auditor";
+  const isDeveloper = currentUser.role === "Developer";
+  const totalItemsInRequest = rows.length > 0 ? rows[0].RequestTotalItems || 0 : 0;
+  const coatingDoneItems = rows.length > 0 ? rows[0].RequestCoatingDoneItems || 0 : 0;
+  const pendingCoatingCount = totalItemsInRequest - coatingDoneItems;
   const isSentToCoating = rows.length > 0 ? rows[0].Send_to_coating : false;
-  const isAllCompleted = rows.length > 0 ? (rows[0].Completed_all === 1 || rows[0].Completed_all === true) : false;
   // const isFormEditable =
   //   !request ||
   //   isAdmin ||
@@ -291,7 +279,7 @@ export default function PurchaseRequestDetail({ request, onBack }) {
     isAdmin ||
     (currentUser.role === "HOS" && !isHOSApproved) ||
     (currentUser.role === "Res" && isHOSApproved && !isReceiverApproved) ||
-    (isAuditor && !isSentToCoating);
+    (isAuditor && !isSentToCoating) || (isDeveloper && isSentToCoating);
   
   // const canCompleteAll =
   //   rows.length > 0 &&
@@ -302,35 +290,7 @@ export default function PurchaseRequestDetail({ request, onBack }) {
       (r) =>
         r.is_Completed === true
     );
-    // console.log("canCompleteAll:", canCompleteAll, rows);
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.ctrlKey && (e.key === 'a' || e.key === 'A')) {
-        e.preventDefault();
-        if (isAuditor) {
-          const areAllSelected = rows.every(r => r.Proceed_to_Complete || r.is_Completed);
-          setRows(prev => prev.map(row => ({ 
-            ...row, 
-            Proceed_to_Complete: row.is_Completed ? true : !areAllSelected 
-          })));
-          if (areAllSelected) {
-            toast.info("All items deselected.");
-          } else {
-            toast.success("All items marked for Proceed.");
-          }
-        }
-      }
-      if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
-        e.preventDefault();
-        if (!isSaving && isFormEditable) {
-          handleSave();
-        }
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [rows, isAuditor, isSaving, isFormEditable]);
+    console.log("canCompleteAll:", canCompleteAll, rows);
   const handleAddItem = async (itemCode) => {
     if (rows.some((row) => row.MaterialCode === itemCode)) {
       toast.info(`Item ${itemCode} already exists.`);
@@ -365,147 +325,39 @@ export default function PurchaseRequestDetail({ request, onBack }) {
       toast.error(`Failed to get details for ${itemCode}`);
     }
   };
-
   const handleSave = async (approvalData = null) => {
     setIsSaving(true);
     try {
-      let employeeId = "SYSTEM";
-      try {
-        employeeId = ls.current.get("employee_id") || "SYSTEM";
-      } catch {}
-      const filteredRows = rows.filter(row => row.Proceed_to_Complete === true || row.is_Completed === true);
-      if (filteredRows.length === 0 && !approvalData) {
-        toast.warning("No records selected to update.");
-        setIsSaving(false);
-        return;
-      }
-      const payload = filteredRows.map((row) => {
-        const willBeCompleted = row.is_Completed || row.Proceed_to_Complete;
-        return {
-          ...row,
-          is_Completed: willBeCompleted ? true : false,
-          Completed_by_empid: (willBeCompleted && !row.is_Completed) ? currentUser.empId : row.Completed_by_empid,
-          Completed_by_name: (willBeCompleted && !row.is_Completed) ? currentUser.name : row.Completed_by_name,
-          Completed_by_at: (willBeCompleted && !row.is_Completed) ? format(new Date(), "yyyy-MM-dd") : row.Completed_by_at,
-          ReqDate: format(date, "yyyy-MM-dd"),
-          DemandDate: row.DemandDate
-            ? format(row.DemandDate, "yyyy-MM-dd")
-            : null,
-          CreatedBy: row.Id === 0 ? employeeId : row.CreatedBy,
-          ModifiedBy: row.Id > 0 ? employeeId : null,
-          HOSName:
-            approvalData?.HOSName !== undefined
-              ? approvalData.HOSName
-              : row.HOSName,
-          HOSempid:
-            approvalData?.HOSempid !== undefined
-              ? approvalData.HOSempid
-              : row.HOSempid,
-          isHOSApproved:
-            approvalData?.isHOSApproved !== undefined
-              ? approvalData.isHOSApproved
-              : row.isHOSApproved,
-          ReceiverName:
-            approvalData?.ReceiverName !== undefined
-              ? approvalData.ReceiverName
-              : row.ReceiverName,
-          Receiver_emp_id:
-            approvalData?.Receiver_emp_id !== undefined
-              ? approvalData.Receiver_emp_id
-              : row.Receiver_emp_id,
-          isReceiverApproved:
-            approvalData?.isReceiverApproved !== undefined
-              ? approvalData.isReceiverApproved
-              : row.isReceiverApproved,
-          is_Final_HOS_Approval:
-            approvalData?.is_Final_HOS_Approval !== undefined
-              ? approvalData.is_Final_HOS_Approval
-              : row.is_Final_HOS_Approval,
-          Final_HOS_Name:
-            approvalData?.Final_HOS_Name !== undefined
-              ? approvalData.Final_HOS_Name
-              : row.Final_HOS_Name,
-          Final_HOS_empid:
-            approvalData?.Final_HOS_empid !== undefined
-              ? approvalData.Final_HOS_empid
-              : row.Final_HOS_empid,
-          Completed_all:
-            approvalData?.Completed_all !== undefined
-              ? approvalData.Completed_all
-              : row.Completed_all,
-          Completed_all_name:
-            approvalData?.Completed_all_name !== undefined
-              ? approvalData.Completed_all_name
-              : row.Completed_all_name,
-          Completed_all_empid:
-            approvalData?.Completed_all_empid !== undefined
-              ? approvalData.Completed_all_empid
-              : row.Completed_all_empid,
-          Completed_all_at:
-            approvalData?.Completed_all_at !== undefined
-              ? format(new Date(approvalData.Completed_all_at), "yyyy-MM-dd")
-              : row.Completed_all_at,
-          Send_to_coating:
-            approvalData?.Send_to_coating !== undefined
-              ? approvalData.Send_to_coating
-              : row.Send_to_coating,
-          Send_by_name:
-            approvalData?.Send_by_name !== undefined
-              ? approvalData.Send_by_name
-              : row.Send_by_name,
-          Send_by_empid:
-            approvalData?.Send_by_empid !== undefined
-              ? approvalData.Send_by_empid
-              : row.Send_by_empid,
-          Send_at:
-            approvalData?.Send_at !== undefined
-              ? format(new Date(approvalData.Send_at), "yyyy-MM-dd")
-              : row.Send_at,
-          Completed_by_at: row.Completed_by_at
-            ? format(new Date(row.Completed_by_at), "yyyy-MM-dd")
-            : null,
-        };
+      let xmlPayload = '<Root>';
+      rows.forEach(row => {
+          const isReturn = approvalData?.is_Return_to_Toolmaking !== undefined ? approvalData.is_Return_to_Toolmaking : row.is_Return_to_Toolmaking;
+          const returnEmpId = approvalData?.Return_to_Toolmaking_by_empid !== undefined ? approvalData.Return_to_Toolmaking_by_empid : (row.Return_to_Toolmaking_by_empid || '');
+          const returnName = approvalData?.Return_to_Toolmaking_by_name !== undefined ? approvalData.Return_to_Toolmaking_by_name : (row.Return_to_Toolmaking_by_name || '');
+          const returnAt = approvalData?.Return_to_Toolmaking_by_at !== undefined ? format(new Date(approvalData.Return_to_Toolmaking_by_at), "yyyy-MM-dd") : (row.Return_to_Toolmaking_by_at ? format(new Date(row.Return_to_Toolmaking_by_at), "yyyy-MM-dd") : '');
+          const goodParts = row.good_parts_by_coating !== null && row.good_parts_by_coating !== undefined ? row.good_parts_by_coating : '';
+          const rejectedParts = row.rejected_parts_by_coating !== null && row.rejected_parts_by_coating !== undefined ? row.rejected_parts_by_coating : '';
+          const coatingComments = row.comments_by_coating || '';
+          xmlPayload += `<Row>
+            <Id>${row.Id}</Id>
+            <good_parts_by_coating>${goodParts}</good_parts_by_coating>
+            <rejected_parts_by_coating>${rejectedParts}</rejected_parts_by_coating>
+            <comments_by_coating>${coatingComments}</comments_by_coating>
+            <is_Return_to_Toolmaking>${isReturn ? 1 : 0}</is_Return_to_Toolmaking>
+            <Return_to_Toolmaking_by_empid>${returnEmpId}</Return_to_Toolmaking_by_empid>
+            <Return_to_Toolmaking_by_name>${returnName}</Return_to_Toolmaking_by_name>
+            <Return_to_Toolmaking_by_at>${returnAt}</Return_to_Toolmaking_by_at>
+          </Row>`;
       });
-      const response = await fetch("/api/purchaserequest/upsert", {
+      xmlPayload += '</Root>';
+      const response = await fetch("/api/coating/upsert", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ data: payload }),
+        body: JSON.stringify({ xmlPayload }),
       });
       if (!response.ok) throw new Error("Save failed");
-      // toast.success("Saved successfully!");
-      toast.success(
-        approvalData ? "Approved successfully!" : "Saved successfully!",
-      );
-      // const responseData = await response.json();
-      // const updatedRows = Array.isArray(responseData) ? responseData : [];
+      toast.success(approvalData ? "Action completed successfully!" : "Saved successfully!");
       if (request) {
-        const updatedData = await response.json();
-        // setRows(updatedData.map(r => ({ ...r, ReqDate: new Date(r.ReqDate), DemandDate: r.DemandDate ? new Date(r.DemandDate) : null, tempId: r.Id })));
-        const fetchRes = await fetch("/api/purchaserequest/get-by-id", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ requestId: request.RequestId }),
-        });
-        const freshData = await fetchRes.json();
-        setRows(
-          freshData.map((r) => ({
-            ...r,
-            ReqDate: new Date(r.ReqDate),
-            DemandDate: r.DemandDate ? new Date(r.DemandDate) : null,
-            tempId: r.Id,
-          })),
-        );
-        // setRows(prev => prev.map(r => ({...r, isSave: 1})));
-      } else {
-        const data = await response.json();
-        setRows(
-          data.map((r) => ({
-            ...r,
-            ReqDate: new Date(r.ReqDate),
-            DemandDate: r.DemandDate ? new Date(r.DemandDate) : null,
-            tempId: r.Id,
-          })),
-        );
+        await fetchRequestData(request.RequestId);
       }
       setShowApprovalModal(false);
     } catch (e) {
@@ -514,6 +366,141 @@ export default function PurchaseRequestDetail({ request, onBack }) {
       setIsSaving(false);
     }
   };
+  // const handleSave = async (approvalData = null) => {
+  //   setIsSaving(true);
+  //   try {
+  //     let employeeId = "SYSTEM";
+  //     try {
+  //       employeeId = ls.current.get("employee_id") || "SYSTEM";
+  //     } catch {}
+  //     const payload = rows.map((row) => ({
+  //       ...row,
+  //       ReqDate: format(date, "yyyy-MM-dd"),
+  //       DemandDate: row.DemandDate
+  //         ? format(row.DemandDate, "yyyy-MM-dd")
+  //         : null,
+  //       CreatedBy: row.Id === 0 ? employeeId : row.CreatedBy,
+  //       ModifiedBy: row.Id > 0 ? employeeId : null,
+  //       HOSName:
+  //         approvalData?.HOSName !== undefined
+  //           ? approvalData.HOSName
+  //           : row.HOSName,
+  //       HOSempid:
+  //         approvalData?.HOSempid !== undefined
+  //           ? approvalData.HOSempid
+  //           : row.HOSempid,
+  //       isHOSApproved:
+  //         approvalData?.isHOSApproved !== undefined
+  //           ? approvalData.isHOSApproved
+  //           : row.isHOSApproved,
+  //       ReceiverName:
+  //         approvalData?.ReceiverName !== undefined
+  //           ? approvalData.ReceiverName
+  //           : row.ReceiverName,
+  //       Receiver_emp_id:
+  //         approvalData?.Receiver_emp_id !== undefined
+  //           ? approvalData.Receiver_emp_id
+  //           : row.Receiver_emp_id,
+  //       isReceiverApproved:
+  //         approvalData?.isReceiverApproved !== undefined
+  //           ? approvalData.isReceiverApproved
+  //           : row.isReceiverApproved,
+  //       is_Final_HOS_Approval:
+  //         approvalData?.is_Final_HOS_Approval !== undefined
+  //           ? approvalData.is_Final_HOS_Approval
+  //           : row.is_Final_HOS_Approval,
+  //       Final_HOS_Name:
+  //         approvalData?.Final_HOS_Name !== undefined
+  //           ? approvalData.Final_HOS_Name
+  //           : row.Final_HOS_Name,
+  //       Final_HOS_empid:
+  //         approvalData?.Final_HOS_empid !== undefined
+  //           ? approvalData.Final_HOS_empid
+  //           : row.Final_HOS_empid,
+  //       Completed_all:
+  //         approvalData?.Completed_all !== undefined
+  //           ? approvalData.Completed_all
+  //           : row.Completed_all,
+  //       Completed_all_name:
+  //         approvalData?.Completed_all_name !== undefined
+  //           ? approvalData.Completed_all_name
+  //           : row.Completed_all_name,
+  //       Completed_all_empid:
+  //         approvalData?.Completed_all_empid !== undefined
+  //           ? approvalData.Completed_all_empid
+  //           : row.Completed_all_empid,
+  //       Completed_all_at:
+  //         approvalData?.Completed_all_at !== undefined
+  //           ? format(new Date(approvalData.Completed_all_at), "yyyy-MM-dd")
+  //           : row.Completed_all_at,
+  //       Send_to_coating:
+  //         approvalData?.Send_to_coating !== undefined
+  //           ? approvalData.Send_to_coating
+  //           : row.Send_to_coating,
+  //       Send_by_name:
+  //         approvalData?.Send_by_name !== undefined
+  //           ? approvalData.Send_by_name
+  //           : row.Send_by_name,
+  //       Send_by_empid:
+  //         approvalData?.Send_by_empid !== undefined
+  //           ? approvalData.Send_by_empid
+  //           : row.Send_by_empid,
+  //       Send_at:
+  //         approvalData?.Send_at !== undefined
+  //           ? format(new Date(approvalData.Send_at), "yyyy-MM-dd")
+  //           : row.Send_at,
+  //       Completed_by_at: row.Completed_by_at
+  //         ? format(new Date(row.Completed_by_at), "yyyy-MM-dd")
+  //         : null,
+  //     }));
+  //     const response = await fetch("/api/purchaserequest/upsert", {
+  //       method: "POST",
+  //       headers: { "Content-Type": "application/json" },
+  //       body: JSON.stringify({ data: payload }),
+  //     });
+  //     if (!response.ok) throw new Error("Save failed");
+  //     // toast.success("Saved successfully!");
+  //     toast.success(
+  //       approvalData ? "Approved successfully!" : "Saved successfully!",
+  //     );
+  //     // const responseData = await response.json();
+  //     // const updatedRows = Array.isArray(responseData) ? responseData : [];
+  //     if (request) {
+  //       const updatedData = await response.json();
+  //       // setRows(updatedData.map(r => ({ ...r, ReqDate: new Date(r.ReqDate), DemandDate: r.DemandDate ? new Date(r.DemandDate) : null, tempId: r.Id })));
+  //       const fetchRes = await fetch("/api/purchaserequest/get-by-id", {
+  //         method: "POST",
+  //         headers: { "Content-Type": "application/json" },
+  //         body: JSON.stringify({ requestId: request.RequestId }),
+  //       });
+  //       const freshData = await fetchRes.json();
+  //       setRows(
+  //         freshData.map((r) => ({
+  //           ...r,
+  //           ReqDate: new Date(r.ReqDate),
+  //           DemandDate: r.DemandDate ? new Date(r.DemandDate) : null,
+  //           tempId: r.Id,
+  //         })),
+  //       );
+  //       // setRows(prev => prev.map(r => ({...r, isSave: 1})));
+  //     } else {
+  //       const data = await response.json();
+  //       setRows(
+  //         data.map((r) => ({
+  //           ...r,
+  //           ReqDate: new Date(r.ReqDate),
+  //           DemandDate: r.DemandDate ? new Date(r.DemandDate) : null,
+  //           tempId: r.Id,
+  //         })),
+  //       );
+  //     }
+  //     setShowApprovalModal(false);
+  //   } catch (e) {
+  //     toast.error(e.message);
+  //   } finally {
+  //     setIsSaving(false);
+  //   }
+  // };
   const handleApproveHOS = () => {
     if (rows.length === 0) {
       toast.error("No items to approve.");
@@ -776,134 +763,60 @@ export default function PurchaseRequestDetail({ request, onBack }) {
   //     <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => handleRemoveRow(row)}><Trash2 className="h-3.5 w-3.5" /></Button>
   // );
   const renderCell = (row, col) => {
-    const isLocked = !isFormEditable && row.isSave === 1;
-
-    const forceLockForAuditor =
-      isAuditor &&
-      !["Completed_parts_qty", "Proceed_to_Complete", "is_Completed"].includes(
-        col.key,
-      );
-    const isGoodPartsInvalid =
-      !row.good_parts_qty || Number(row.good_parts_qty) <= 0;
-
-    if (col.key === "Proceed_to_Complete") {
-      return (
-        <input
-          type="checkbox"
-          disabled={!isAuditor}
-          checked={!!row.Proceed_to_Complete}
-          onChange={(e) =>
-            handleRowChange(row.tempId, "Proceed_to_Complete", e.target.checked)
-          }
-          className="h-4 w-4 cursor-pointer"
-        />
-      );
+    if (col.key === "OrderQty") {
+      return <span className="text-xs px-2 py-1 block font-semibold">{row.Completed_parts_qty || 0}</span>;
     }
-
-    if (col.key === "is_Completed") {
-      const canClickComplete =
-        Number(row.good_parts_qty) === Number(row.Completed_parts_qty) ||
-        row.Proceed_to_Complete;
-      if (row.is_Completed)
-        return (
-          <span className="text-green-600 font-bold text-xs flex items-center gap-1">
-            <Check className="h-3 w-3" /> Done
-          </span>
-        );
-      const isRowCompleting = completingRowId === row.tempId;
-
-      return (
-        <Button
-          size="sm"
-          variant="outline"
-          className="h-7 text-[10px]"
-          disabled={!isAuditor || !canClickComplete || isSentToCoating || isRowCompleting}
-          onClick={async () => {
-            setCompletingRowId(row.tempId);
-            const proceedBit = row.Proceed_to_Complete ? 1 : 0;
-            const compQty = row.Completed_parts_qty || 0;
-            const xmlPayload = `
-              <Row>
-                <Id>${row.Id}</Id>
-                <is_Completed>1</is_Completed>
-                <Proceed_to_Complete>${proceedBit}</Proceed_to_Complete>
-                <Completed_parts_qty>${compQty}</Completed_parts_qty>
-                <Completed_by_empid>${currentUser.empId}</Completed_by_empid>
-                <Completed_by_name>${currentUser.name}</Completed_by_name>
-                <Completed_by_at>${new Date().toISOString().split('T')[0]}</Completed_by_at>
-              </Row>
-            `;
-
-            try {
-              const res = await fetch("/api/purchaserequest/complete-row", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ xmlPayload }),
-              });
-
-              if (res.ok) {
-                toast.success("Row marked as complete!");
-                if (request) await fetchRequestData(request.RequestId);
-              } else {
-                toast.error("Failed to complete row.");
-              }
-            } catch (e) {
-              toast.error("Error connecting to server.");
-            } finally {
-              setCompletingRowId(null);
-            }
-          }}
-        >
-          {isRowCompleting ? (
-            <Loader2 className="animate-spin h-3 w-3 mr-1" />
-          ) : null}
-          {isRowCompleting ? "Saving..." : "Complete"}
-        </Button>
-      );
-    }
-
-    if (col.key === "Completed_parts_qty") {
+    if (col.key === "good_parts_by_coating") {
       return (
         <Input
-          className="h-7 text-xs w-20"
+          className="h-7 text-xs w-20 border-primary/50 focus-visible:ring-primary"
           type="number"
-          disabled={!isAuditor || isSentToCoating || isGoodPartsInvalid}
-          value={row[col.key] || ""}
-          // onChange={(e) => handleRowChange(row.tempId, col.key, e.target.value)}
-          onChange={(e) =>
-            handleRowChange(row.tempId, {
-              Completed_parts_qty: e.target.value,
-              Proceed_to_Complete: false
-            })
-          }
+          // disabled={!isDeveloper || row.is_Return_to_Toolmaking}
+          disabled={!isFormEditable || !isDeveloper || row.is_Return_to_Toolmaking}
+          value={row[col.key] ?? ""}
+          onChange={(e) => {
+            const goodVal = e.target.value === '' ? null : parseFloat(e.target.value);
+            
+            if (goodVal === null) {
+              handleRowChange(row.tempId, { good_parts_by_coating: null, rejected_parts_by_coating: null });
+            } else {
+              const completed = parseFloat(row.Completed_parts_qty) || 0;
+              const rejected = completed - goodVal;
+              
+              handleRowChange(row.tempId, {
+                good_parts_by_coating: goodVal,
+                rejected_parts_by_coating: rejected >= 0 ? rejected : 0
+              });
+            }
+          }}
         />
       );
     }
-
-    if (isLocked || forceLockForAuditor) {
-      if (col.key === "DemandDate") {
-        return (
-          <span className="text-xs px-2">
-            {row.DemandDate
-              ? format(new Date(row.DemandDate), "dd-MMM-yy")
-              : "-"}
-          </span>
-        );
-      }
+    if (col.key === "rejected_parts_by_coating") {
       return (
-        <span className="text-xs px-2 py-1 block min-h-[1.75rem]">
-          {row[col.key] || "-"}
+        <span className="text-xs px-2 py-1 block font-medium text-muted-foreground bg-muted/30 rounded w-16 text-center border">
+          {row[col.key] ?? "-"}
         </span>
       );
     }
-
+    if (col.key === "comments_by_coating") {
+      return (
+        <Input
+          className="h-7 text-xs min-w-[150px] border-primary/50"
+          disabled={!isFormEditable || !isDeveloper || row.is_Return_to_Toolmaking}
+          value={row[col.key] || ""}
+          onChange={(e) => handleRowChange(row.tempId, "comments_by_coating", e.target.value)}
+          placeholder="Enter comments..."
+        />
+      );
+    }
+    if (col.key === "DemandDate") {
+      return <span className="text-xs px-2 block">{row.DemandDate ? format(new Date(row.DemandDate), "dd-MMM-yy") : "-"}</span>;
+    }
     return (
-      <Input
-        className="h-7 text-xs min-w-[80px]"
-        value={row[col.key] || ""}
-        onChange={(e) => handleRowChange(row.tempId, col.key, e.target.value)}
-        type={col.key.includes("Qty") ? "number" : "text"}
-      />
+      <span className="text-xs px-2 py-1 block truncate max-w-[200px]" title={row[col.key]}>
+        {row[col.key] || "-"}
+      </span>
     );
   };
   const actionColumn = (row) => {
@@ -1144,7 +1057,7 @@ export default function PurchaseRequestDetail({ request, onBack }) {
                   </div>
                 )}
               </div>
-              <div hidden className="bg-muted/50 rounded-lg p-4 border border-border flex flex-col justify-between">
+              <div className="bg-muted/50 rounded-lg p-4 border border-border flex flex-col justify-between">
                 <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
                   Coating Status
                 </h4>
@@ -1162,7 +1075,7 @@ export default function PurchaseRequestDetail({ request, onBack }) {
                   </div>
                 ) : isAuditor ? (
                   <button
-                    disabled={!isAllCompleted}
+                    disabled={!canCompleteAll}
                     onClick={() => {
                       if (
                         confirm("Send to coating? This will lock your access.")
@@ -1175,10 +1088,7 @@ export default function PurchaseRequestDetail({ request, onBack }) {
                         });
                       }
                     }}
-                    className={cn(
-                      "w-full flex items-center justify-center gap-2 bg-primary hover:bg-primary/90 text-white py-2.5 rounded-md transition-colors font-medium cursor-pointer",
-                      !isAllCompleted && "opacity-80 cursor-not-allowed",
-                    )}
+                    className="w-full flex items-center justify-center gap-2 bg-primary/60 hover:bg-primary cursor-pointer text-white py-2.5 rounded-md transition-colors font-medium disabled:opacity-50"
                   >
                     <Printer size={16} /> Send to Coating
                   </button>
@@ -1226,6 +1136,45 @@ export default function PurchaseRequestDetail({ request, onBack }) {
                   </div>
                 )}
               </div> */}
+              {currentUser.role === 'Developer' && (
+                <div className="bg-muted/50 rounded-lg p-4 border border-border flex flex-col justify-between">
+                  <h4 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-2">
+                    Return to Toolmaking
+                  </h4>
+                  {rows.length > 0 && rows[0].is_Return_to_Toolmaking ? (
+                    <div className="text-green-600 bg-green-50 dark:bg-green-900/20 px-3 py-2 rounded-md border border-green-200 dark:border-green-800 mb-3">
+                      <p className="font-semibold flex items-center gap-2">
+                        <Check size={16} /> Returned to Toolmaking
+                      </p>
+                      <p className="text-xs mt-1 opacity-80">
+                        By: {rows[0]?.Return_to_Toolmaking_by_name} ({rows[0]?.Return_to_Toolmaking_by_empid})
+                      </p>
+                    </div>
+                  ) : (
+                    <div>
+                      <p className="text-xs text-muted-foreground mb-2 font-semibold">
+                        Pending Coating Enter: {pendingCoatingCount} / {totalItemsInRequest}
+                      </p>
+                      <button
+                        disabled={pendingCoatingCount > 0}
+                        onClick={() => {
+                          if (confirm("Return to Toolmaking? This will lock the form.")) {
+                            handleSave({
+                              is_Return_to_Toolmaking: true,
+                              Return_to_Toolmaking_by_empid: currentUser.empId,
+                              Return_to_Toolmaking_by_name: currentUser.name,
+                              Return_to_Toolmaking_by_at: new Date(),
+                            });
+                          }
+                        }}
+                        className="w-full flex items-center justify-center gap-2 bg-primary/80 hover:bg-primary text-white py-2.5 rounded-md transition-colors font-medium disabled:opacity-50 cursor-pointer"
+                      >
+                        <Printer size={16} /> Return to Toolmaking
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </div>

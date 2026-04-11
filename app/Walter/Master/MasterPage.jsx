@@ -5,7 +5,7 @@ import SecureLS from 'secure-ls';
 import { motion } from 'framer-motion';
 import { Check, ChevronsUpDown, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
-
+import { useAccessCheck } from '@/lib/useAccessCheck';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 const MasterPage = () => {
+    const PAGE_ID_FOR_THIS_FORM = 2028;
+    const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
     const initialFormState = {
         itemCode: "",
         sizeSpecifications: "",

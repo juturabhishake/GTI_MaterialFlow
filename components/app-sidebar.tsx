@@ -131,6 +131,21 @@ const data = {
           title: "View",
           url: "/purchase_req_form/view",
         },
+        {
+          icon: IconDatabase,
+          title: "Sent to Coating",
+          url: "/purchase_req_form/send_to_coating",
+        },
+        {
+          icon: IconDatabase,
+          title: "Coating View",
+          url: "/purchase_req_form/coating_view",
+        },
+        {
+          icon: IconDatabase,
+          title: "Final View",
+          url: "/purchase_req_form/final_view",
+        },
       ]
     },
     {

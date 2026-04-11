@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from '@/components/ui/calendar';
-
+import { useAccessCheck } from '@/lib/useAccessCheck';
 const allColumns = [
     { key: 'MaterialCode', label: 'Material Code', filterable: true },
     { key: 'ItemSpecification', label: 'Specification', filterable: true },
@@ -143,6 +143,8 @@ const ItemCodeSelector = ({ options, onSelect, disabled, selectedValues = [] }) 
 };
 
 export default function PurchaseRequestClient() {
+    const PAGE_ID_FOR_THIS_FORM = 2025;
+    const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
     const [tableRows, setTableRows] = useState([]);
     const [itemCodeOptions, setItemCodeOptions] = useState([]);
     const [isLoading, setIsLoading] = useState(true);

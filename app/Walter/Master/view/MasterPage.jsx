@@ -18,7 +18,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Badge } from "@/components/ui/badge";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
-
+import { useAccessCheck } from '@/lib/useAccessCheck';
 const allColumns = [ { key: 'ItemCode', label: 'Item Code', filterable: true }, { key: 'SizeSpecifications', label: 'Size Specifications', filterable: true }, { key: 'CycleTime', label: 'Cycle Time', filterable: true }, { key: 'Piece', label: 'Piece', filterable: true }, { key: 'SetupMinutes', label: 'Setup Minutes', filterable: true }, { key: 'CreatedAt', label: 'Created On', filterable: true }, { key: 'CreatedBy', label: 'Created By', filterable: true }, { key: 'ModifiedAt', label: 'Modified On', filterable: true }, { key: 'ModifiedBy', label: 'Modified By', filterable: true }, ];
 const fieldOptions = allColumns.map((c) => ({ value: c.key, label: c.label }));
 const operatorOptions = [ { value: 'is', label: 'is' }, { value: 'is-not', label: 'is not' }, { value: 'contains', label: 'contains' }, { value: 'does-not-contain', label: 'does not contain' }, { value: 'starts-with', label: 'starts with' }, { value: 'ends-with', label: 'ends with' }, { value: 'is-empty', label: 'is empty' }, { value: 'is-not-empty', label: 'is not empty' }, ];
@@ -75,6 +75,8 @@ const FilterPanel = ({ isOpen, onClose, onApplyFilter }) => {
 };
 
 const EditForm = ({ item, onSave, onCancel }) => {
+    const PAGE_ID_FOR_THIS_FORM = 2029;
+    const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
     const [formData, setFormData] = useState(item);
     const [submitStatus, setSubmitStatus] = useState('idle');
 

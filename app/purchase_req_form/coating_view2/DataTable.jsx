@@ -123,8 +123,7 @@ const ColumnFilterPopover = ({ column, data, activeFilters, onFilterChange }) =>
 };
 
 export default function DataTable({ columns, data, onRowClick, renderCell, actionColumn }) {
-    // const [pagination, setPagination] = useState({ currentPage: 1, rowsPerPage: 10 });
-    const [pagination, setPagination] = useState({ currentPage: 1, rowsPerPage: "All" });
+    const [pagination, setPagination] = useState({ currentPage: 1, rowsPerPage: 10 });
     const [globalFilter, setGlobalFilter] = useState('');
     const [columnFilters, setColumnFilters] = useState({});
     const [headerSearchColumn, setHeaderSearchColumn] = useState(columns.find(c => !c.hidden)?.key || columns[0].key);
@@ -155,11 +154,9 @@ export default function DataTable({ columns, data, onRowClick, renderCell, actio
         });
         return processed;
     }, [data, headerSearchValues, globalFilter, columnFilters, sortConfig, headerSearchColumn]);
-    const limit = pagination.rowsPerPage === "All" ? processedData.length || 1 : pagination.rowsPerPage;
-    // const paginatedData = processedData.slice((pagination.currentPage - 1) * pagination.rowsPerPage, pagination.currentPage * pagination.rowsPerPage);
-    // const totalPages = Math.ceil(processedData.length / pagination.rowsPerPage);
-    const paginatedData = processedData.slice((pagination.currentPage - 1) * limit, pagination.currentPage * limit);
-    const totalPages = Math.ceil(processedData.length / limit);
+
+    const paginatedData = processedData.slice((pagination.currentPage - 1) * pagination.rowsPerPage, pagination.currentPage * pagination.rowsPerPage);
+    const totalPages = Math.ceil(processedData.length / pagination.rowsPerPage);
 
     useLayoutEffect(() => {
         const updateHeight = () => {
@@ -203,8 +200,7 @@ export default function DataTable({ columns, data, onRowClick, renderCell, actio
                     <tbody>
                         {paginatedData.map((row, i) => (
                             <tr key={i} className="border-b hover:bg-muted/50 cursor-pointer" onClick={() => onRowClick && onRowClick(row)}>
-                                {/* <td className="px-4 py-2 text-muted-foreground">{((pagination.currentPage - 1) * pagination.rowsPerPage) + i + 1}</td> */}
-                                <td className="px-4 py-2 text-muted-foreground">{((pagination.currentPage - 1) * limit) + i + 1}</td>
+                                <td className="px-4 py-2 text-muted-foreground">{((pagination.currentPage - 1) * pagination.rowsPerPage) + i + 1}</td>
                                 {columns.filter(c => !c.hidden).map(col => (
                                     <td key={col.key} className="px-4 py-2 whitespace-nowrap">
                                         {renderCell ? renderCell(row, col) : row[col.key]}
@@ -219,7 +215,7 @@ export default function DataTable({ columns, data, onRowClick, renderCell, actio
             </div>
 
             <div id="table-footer" className="p-4 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-2"><span className="text-sm font-medium">Rows:</span><select value={pagination.rowsPerPage} onChange={(e) => setPagination({ currentPage: 1, rowsPerPage: Number(e.target.value) })} className="bg-background border rounded-md p-1 h-8 text-sm">{[10, 20, 50, 100].map(size => <option key={size} value={size}>{size}</option>)}<option value="All">All</option></select></div>
+                <div className="flex items-center gap-2"><span className="text-sm font-medium">Rows:</span><select value={pagination.rowsPerPage} onChange={(e) => setPagination({ currentPage: 1, rowsPerPage: Number(e.target.value) })} className="bg-background border rounded-md p-1 h-8 text-sm">{[10, 20, 50, 100].map(size => <option key={size} value={size}>{size}</option>)}</select></div>
                 <div className="text-sm text-muted-foreground">{((pagination.currentPage - 1) * pagination.rowsPerPage) + 1}-{Math.min(pagination.currentPage * pagination.rowsPerPage, processedData.length)} of {processedData.length}</div>
                 <div className="flex items-center gap-1">
                     <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setPagination(p => ({ ...p, currentPage: 1 }))} disabled={pagination.currentPage === 1}>«</Button>

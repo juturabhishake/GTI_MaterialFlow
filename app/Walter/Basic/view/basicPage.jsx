@@ -20,7 +20,7 @@ import { Badge } from "@/components/ui/badge";
 import { DateRangePicker } from "@/components/ui/date-range-picker";
 import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from '@/components/ui/calendar';
-
+import { useAccessCheck } from '@/lib/useAccessCheck';
 const allColumns = [ { key: 'TransactionDate', label: 'Date', filterable: true }, { key: 'Shift', label: 'Shift', filterable: true }, { key: 'ItemCode', label: 'Item Code', filterable: true }, { key: 'SizeSpecifications', label: 'Size Specs', filterable: true }, { key: 'FullOrderQuantity', label: 'Order Qty', filterable: true }, { key: 'OKQuantity', label: 'OK Qty', filterable: true }, { key: 'NGQuantity', label: 'NG Qty', filterable: true }, { key: 'TotalOrderCompletionTime', label: 'Total Time', filterable: true }, { key: 'CycleTimePerPiece', label: 'Cycle Time/Pc', filterable: true }, { key: 'ToolDebuggingTime', label: 'Debug Time', filterable: true }, { key: 'ReworkQty', label: 'Rework Qty', filterable: true }, { key: 'ReworkTime', label: 'Rework Time', filterable: true }, { key: 'WarmUp', label: 'Warm Up', filterable: true }, { key: 'IdleTime', label: 'Idle Time', filterable: true }, { key: 'EquipmentBreakdownTime', label: 'Breakdown', filterable: true }, { key: 'ToolsNotAvailableTime', label: 'Tools NA', filterable: true }, { key: 'Remarks', label: 'Remarks', filterable: true }, { key: 'CreatedAt', label: 'Created On', filterable: true }, { key: 'CreatedBy', label: 'Created By', filterable: true }, { key: 'ModifiedAt', label: 'Modified On', filterable: true }, { key: 'ModifiedBy', label: 'Modified By', filterable: true }, ];
 const fieldOptions = allColumns.map((c) => ({ value: c.key, label: c.label }));
 const operatorOptions = [ { value: 'is', label: 'is' }, { value: 'is-not', label: 'is not' }, { value: 'contains', label: 'contains' }, { value: 'does-not-contain', label: 'does not contain' }, { value: 'starts-with', label: 'starts with' }, { value: 'ends-with', label: 'ends with' }, { value: 'is-empty', label: 'is empty' }, { value: 'is-not-empty', label: 'is not empty' }, ];
@@ -77,6 +77,8 @@ const FilterPanel = ({ isOpen, onClose, onApplyFilter }) => {
 };
 
 const EditForm = ({ item, onSave, onCancel }) => {
+    const PAGE_ID_FOR_THIS_FORM = 2030;
+    const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
     const [formData, setFormData] = useState({...item, TransactionDate: new Date(item.TransactionDate)});
     const [shiftOptions, setShiftOptions] = useState([]);
     const [submitStatus, setSubmitStatus] = useState('idle');

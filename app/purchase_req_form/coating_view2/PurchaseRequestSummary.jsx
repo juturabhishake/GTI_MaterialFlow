@@ -13,7 +13,7 @@ import DataTable from "./DataTable";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { useAdminAccessCheck } from "@/lib/checkAdmin";
-import { useAccessCheck } from '@/lib/useAccessCheck';
+
 // const summaryColumns = [
 //     { key: 'FormattedRequestId', label: 'Request ID', filterable: true, hidden: false },
 //     { key: 'TotalOrderQty', label: 'Total Order Qty', filterable: true, hidden: false },
@@ -145,7 +145,6 @@ export default function PurchaseRequestSummary({ onViewDetails, onCreateNew }) {
   const { hasAccess: isAdmin, isLoading: accessLoading } = useAdminAccessCheck(
     PAGE_ID_FOR_THIS_FORM,
   );
-  const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
   const [data, setData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -163,7 +162,7 @@ export default function PurchaseRequestSummary({ onViewDetails, onCreateNew }) {
     if (!start || !end) return;
     setIsLoading(true);
     try {
-      const res = await fetch("/api/purchaserequest/summary", {
+      const res = await fetch("/api/coating/summary", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -307,44 +306,44 @@ export default function PurchaseRequestSummary({ onViewDetails, onCreateNew }) {
   //     return row[col.key];
   //   };
   const renderCell = (row, col) => {
-      if (col.key === "Status") {
-        const hosApp = row.isHOSApproved === 1 || row.isHOSApproved === true;
-        const recApp = row.isReceiverApproved === 1 || row.isReceiverApproved === true;
-        const coatApp = row.Send_to_coating === 1 || row.Send_to_coating === true;
-        const toolApp = row.is_Return_to_Toolmaking === 1 || row.is_Return_to_Toolmaking === true;
-  
-        const Step = ({ active, done, label, title }) => (
-          <div className="flex flex-col items-center w-8" title={title}>
-            <div className={cn("h-5 w-5 rounded-full flex items-center justify-center border-2 transition-all duration-300", done ? "bg-green-500 border-green-500 text-white" : active ? "border-amber-500 text-amber-500 bg-amber-50" : "border-gray-300 bg-gray-50")}>
-              {done ? <Check size={12} strokeWidth={3} /> : active ? <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></div> : null}
-            </div>
-            <span className="text-[8px] mt-1 font-bold text-muted-foreground uppercase">{label}</span>
+    if (col.key === "Status") {
+      const hosApp = row.isHOSApproved === 1 || row.isHOSApproved === true;
+      const recApp = row.isReceiverApproved === 1 || row.isReceiverApproved === true;
+      const coatApp = row.Send_to_coating === 1 || row.Send_to_coating === true;
+      const toolApp = row.is_Return_to_Toolmaking === 1 || row.is_Return_to_Toolmaking === true;
+
+      const Step = ({ active, done, label, title }) => (
+        <div className="flex flex-col items-center w-8" title={title}>
+          <div className={cn("h-5 w-5 rounded-full flex items-center justify-center border-2 transition-all duration-300", done ? "bg-green-500 border-green-500 text-white" : active ? "border-amber-500 text-amber-500 bg-amber-50" : "border-gray-300 bg-gray-50")}>
+            {done ? <Check size={12} strokeWidth={3} /> : active ? <div className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"></div> : null}
           </div>
-        );
-  
-        const Line = ({ done }) => (
-          <div className="relative h-[2px] w-4 bg-gray-200 mx-0.5 mt-[-14px] rounded-full overflow-hidden">
-            <div className={cn("absolute inset-0 bg-green-500 transition-all duration-500", done ? "w-full" : "w-0")}></div>
-          </div>
-        );
-  
-        return (
-          <div className="flex items-center py-1 cursor-help">
-            <Step done={hosApp} active={!hosApp} label="HOS" title={hosApp ? `Approved By: ${row.HOSName || "HOS"}` : "Pending HOS"} />
-            <Line done={hosApp} />
-            
-            <Step done={recApp} active={hosApp && !recApp} label="REC" title={recApp ? `Approved By: ${row.ReceiverName || "Receiver"}` : "Pending Receiver"} />
-            <Line done={recApp} />
-            
-            <Step done={coatApp} active={recApp && !coatApp} label="COAT" title={coatApp ? `Sent By: ${row.Send_by_name || "Coating"}` : "Pending Send to Coating"} />
-            <Line done={coatApp} />
-  
-            <Step done={toolApp} active={coatApp && !toolApp} label="TOOL" title={toolApp ? `Returned By: ${row.Return_to_Toolmaking_by_name || "Toolmaking"}` : "Pending Return to Toolmaking"} />
-          </div>
-        );
-      }
-      return row[col.key];
-    };
+          <span className="text-[8px] mt-1 font-bold text-muted-foreground uppercase">{label}</span>
+        </div>
+      );
+
+      const Line = ({ done }) => (
+        <div className="relative h-[2px] w-4 bg-gray-200 mx-0.5 mt-[-14px] rounded-full overflow-hidden">
+          <div className={cn("absolute inset-0 bg-green-500 transition-all duration-500", done ? "w-full" : "w-0")}></div>
+        </div>
+      );
+
+      return (
+        <div className="flex items-center py-1 cursor-help">
+          <Step done={hosApp} active={!hosApp} label="HOS" title={hosApp ? `Approved By: ${row.HOSName || "HOS"}` : "Pending HOS"} />
+          <Line done={hosApp} />
+          
+          <Step done={recApp} active={hosApp && !recApp} label="REC" title={recApp ? `Approved By: ${row.ReceiverName || "Receiver"}` : "Pending Receiver"} />
+          <Line done={recApp} />
+          
+          <Step done={coatApp} active={recApp && !coatApp} label="COAT" title={coatApp ? `Sent By: ${row.Send_by_name || "Coating"}` : "Pending Send to Coating"} />
+          <Line done={coatApp} />
+
+          <Step done={toolApp} active={coatApp && !toolApp} label="TOOL" title={toolApp ? `Returned By: ${row.Return_to_Toolmaking_by_name || "Toolmaking"}` : "Pending Return to Toolmaking"} />
+        </div>
+      );
+    }
+    return row[col.key];
+  };
   const handleApplyFilter = () => {
     if (dateRange?.from && dateRange?.to) {
       fetchSummary(dateRange.from, dateRange.to);
