@@ -228,7 +228,8 @@ export default function CoatingSendView() {
 
     useEffect(() => {
         const handleKeyDown = (e) => {
-            if (e.ctrlKey && !e.shiftKey && (e.key === 'a' || e.key === 'A')) {
+            const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+            if (isCmdOrCtrl && !e.shiftKey && (e.key === 'a' || e.key === 'A')) {
                 e.preventDefault();
                 
                 const filteredEligible = processedData.filter(r => !r.Send_to_coating);
@@ -247,7 +248,7 @@ export default function CoatingSendView() {
                 if (allFilteredSelected) toast.info("Filtered selections cleared.");
                 else toast.success("Filtered items selected.");
             }
-            if (e.ctrlKey && e.shiftKey && (e.key === 's' || e.key === 'S')) {
+            if (isCmdOrCtrl && e.shiftKey && (e.key === 's' || e.key === 'S')) {
                 e.preventDefault();
                 if (!isSaving) handleSendToCoating();
             }
@@ -276,7 +277,20 @@ export default function CoatingSendView() {
     ];
 
     const hasSelectedItems = data.some(r => r.isSelected && !r.Send_to_coating);
-
+    const eligibleFilteredRowsForHeader = processedData.filter(r => !r.Send_to_coating);
+    const isAllEligibleSelected = eligibleFilteredRowsForHeader.length > 0 && eligibleFilteredRowsForHeader.every(r => r.isSelected);
+    const handleSelectAllClick = () => {
+        if (eligibleFilteredRowsForHeader.length === 0) return;
+        const eligibleFilteredIds = new Set(eligibleFilteredRowsForHeader.map(r => r.Id));
+        setData(prev => prev.map(row => {
+            if (eligibleFilteredIds.has(row.Id)) {
+                return { ...row, isSelected: !isAllEligibleSelected };
+            }
+            return row;
+        }));
+        if (isAllEligibleSelected) toast.info("Filtered selections cleared.");
+        else toast.success("Filtered items selected.");
+    };
     return (
         <div className="@container/main flex flex-col h-screen overflow-hidden bg-background space-y-2 font-sans w-full">
             <div className="flex-none flex flex-col md:flex-row items-start md:items-center justify-between bg-card p-4 rounded-lg shadow-sm border border-border gap-4">
@@ -317,9 +331,24 @@ export default function CoatingSendView() {
                                         {columns.map((col) => (
                                             <th key={col.key} className={cn("p-2 border-r border-primary-foreground/20 whitespace-nowrap bg-primary", col.w)}>
                                                 <div className="flex items-center justify-between group">
-                                                    <div className="flex items-center cursor-pointer hover:text-yellow-200" onClick={() => handleSort(col.key)}>
+                                                    {/* <div className="flex items-center cursor-pointer hover:text-yellow-200" onClick={() => handleSort(col.key)}>
                                                         {col.label} {getSortIcon(col.key)}
-                                                    </div>
+                                                    </div> */}
+                                                    {col.key === 'checkbox' ? (
+                                                        <div className="flex items-center justify-center w-full">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={isAllEligibleSelected}
+                                                                onChange={handleSelectAllClick}
+                                                                disabled={eligibleFilteredRowsForHeader.length === 0}
+                                                                className="w-4 h-4 cursor-pointer accent-white" 
+                                                            />
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex items-center cursor-pointer hover:text-yellow-200" onClick={() => handleSort(col.key)}>
+                                                            {col.label} {getSortIcon(col.key)}
+                                                        </div>
+                                                    )}
                                                     {!['checkbox', 'process', 'sent_status'].includes(col.key) && (
                                                         <FilterPopover columnKey={col.key} title={col.label} data={data} selectedValues={columnFilters[col.key] || []} onSelect={(val) => toggleFilter(col.key, val)} onSelectAll={(vals) => selectAllFilter(col.key, vals)} onClear={() => clearFilter(col.key)} />
                                                     )}

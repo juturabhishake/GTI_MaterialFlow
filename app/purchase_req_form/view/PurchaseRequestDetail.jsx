@@ -169,6 +169,7 @@ export default function PurchaseRequestDetail({ request, onBack }) {
   );
   const { isLoading: isAccessLoading, hasAccess } = useAccessCheck(PAGE_ID_FOR_THIS_FORM);
   const [rows, setRows] = useState([]);
+  const [filteredRows, setFilteredRows] = useState([]);
   const [date, setDate] = useState(
     request ? new Date(request.ReqDate) : new Date(),
   );
@@ -305,22 +306,14 @@ export default function PurchaseRequestDetail({ request, onBack }) {
     // console.log("canCompleteAll:", canCompleteAll, rows);
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.ctrlKey && (e.key === 'a' || e.key === 'A')) {
+      const isCmdOrCtrl = e.ctrlKey || e.metaKey;
+      if (isCmdOrCtrl && (e.key === 'a' || e.key === 'A')) {
         e.preventDefault();
         if (isAuditor) {
-          const areAllSelected = rows.every(r => r.Proceed_to_Complete || r.is_Completed);
-          setRows(prev => prev.map(row => ({ 
-            ...row, 
-            Proceed_to_Complete: row.is_Completed ? true : !areAllSelected 
-          })));
-          if (areAllSelected) {
-            toast.info("All items deselected.");
-          } else {
-            toast.success("All items marked for Proceed.");
-          }
+          handleSelectAllClick();
         }
       }
-      if (e.ctrlKey && (e.key === 's' || e.key === 'S')) {
+      if (isCmdOrCtrl && (e.key === 's' || e.key === 'S')) {
         e.preventDefault();
         if (!isSaving && isFormEditable) {
           handleSave();
@@ -957,6 +950,44 @@ export default function PurchaseRequestDetail({ request, onBack }) {
       document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isDragging]);
+  const eligibleFilteredRows = filteredRows.filter(r => !r.is_Completed);
+  const isAllEligibleSelected = eligibleFilteredRows.length > 0 && eligibleFilteredRows.every(r => r.Proceed_to_Complete);
+  const handleSelectAllClick = () => {
+    if (!isAuditor || eligibleFilteredRows.length === 0) return;
+    const eligibleFilteredIds = new Set(eligibleFilteredRows.map(r => r.tempId));
+    setRows(prev => prev.map(row => {
+      if (eligibleFilteredIds.has(row.tempId)) {
+          if (row.is_Completed) return row;
+          return { ...row, Proceed_to_Complete: !isAllEligibleSelected };
+      }
+      return row;
+    }));
+    if (isAllEligibleSelected) {
+      toast.info("Selections cleared.");
+    } else {
+      toast.success("Filtered items marked for Proceed.");
+    }
+  };
+  const dynamicColumns = detailColumns.map(col => {
+    if (col.key === "Proceed_to_Complete") {
+      return {
+        ...col,
+        label: (
+          <div className="flex items-center gap-1 cursor-pointer" onClick={(e) => { e.stopPropagation(); handleSelectAllClick(); }}>
+            <input 
+              type="checkbox"
+              checked={isAllEligibleSelected}
+              readOnly
+              disabled={eligibleFilteredRows.length === 0 || !isAuditor}
+              className="w-4 h-4 cursor-pointer accent-primary"
+            />
+            {/* <span>Proceed</span> */}
+          </div>
+        )
+      };
+    }
+    return col;
+  });
   return (
     <div className="@container/main flex flex-col h-full space-y-4 p-4">
       <header className="flex flex-wrap items-center justify-between gap-4">
@@ -1038,10 +1069,11 @@ export default function PurchaseRequestDetail({ request, onBack }) {
         </div>
       ) : (
         <DataTable
-          columns={detailColumns}
+          columns={dynamicColumns}
           data={rows}
           renderCell={renderCell}
           actionColumn={actionColumn}
+          onFilteredDataChange={setFilteredRows}
         />
       )}
 
