@@ -304,6 +304,8 @@ export default function PurchaseRequestDetail({ request, onBack }) {
         r.is_Completed === true
     );
     // console.log("canCompleteAll:", canCompleteAll, rows);
+  const eligibleFilteredRows = filteredRows.filter(r => !r.is_Completed);
+  const isAllEligibleSelected = eligibleFilteredRows.length > 0 && eligibleFilteredRows.every(r => r.Proceed_to_Complete);
   useEffect(() => {
     const handleKeyDown = (e) => {
       const isCmdOrCtrl = e.ctrlKey || e.metaKey;
@@ -323,7 +325,7 @@ export default function PurchaseRequestDetail({ request, onBack }) {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [rows, isAuditor, isSaving, isFormEditable]);
+  }, [rows, isAuditor, isSaving, isFormEditable, filteredRows, isAllEligibleSelected]);
   const handleAddItem = async (itemCode) => {
     if (rows.some((row) => row.MaterialCode === itemCode)) {
       toast.info(`Item ${itemCode} already exists.`);
@@ -950,8 +952,6 @@ export default function PurchaseRequestDetail({ request, onBack }) {
       document.removeEventListener("mouseup", handleMouseUp);
     };
   }, [isDragging]);
-  const eligibleFilteredRows = filteredRows.filter(r => !r.is_Completed);
-  const isAllEligibleSelected = eligibleFilteredRows.length > 0 && eligibleFilteredRows.every(r => r.Proceed_to_Complete);
   const handleSelectAllClick = () => {
     if (!isAuditor || eligibleFilteredRows.length === 0) return;
     const eligibleFilteredIds = new Set(eligibleFilteredRows.map(r => r.tempId));
