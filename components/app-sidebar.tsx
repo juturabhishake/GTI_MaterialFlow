@@ -163,6 +163,11 @@ const data = {
         },
       ]
     },
+    {
+      title: "Item Master",
+      url: "/item-master",
+      icon: IconDatabase,
+    },
     // {
     //   title: "Equipment Maintenance",
     //   url: "#",
