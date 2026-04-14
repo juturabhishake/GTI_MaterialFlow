@@ -16,7 +16,7 @@ function runMiddleware(req, res, fn) {
 export default async function handler(req, res) {
     await runMiddleware(req, res, cors);
     if (req.method === "POST") {
-        const { itemId, itemCode, location, stdStock, safetyStock, image, updatedBy } = req.body;
+        const { itemId, itemCode, location, stdStock, safetyStock, image, isCritical, updatedBy } = req.body;
         try {
             let finalImagePath = image;
             if (image && image.startsWith('data:image')) {
@@ -43,6 +43,7 @@ export default async function handler(req, res) {
                 @StandardStock=${stdStock}, 
                 @SafetyStock=${safetyStock}, 
                 @ItemImage=${finalImagePath}, 
+                @IsCritical=${isCritical ? 1 : 0},
                 @UpdatedBy=${updatedBy}
             `;
             return res.status(200).json({ message: "Success" });

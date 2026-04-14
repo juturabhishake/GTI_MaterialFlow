@@ -207,6 +207,7 @@ export default function ItemMasterView() {
                     stdStock: parseInt(formData.Standard_Stock) || 0,
                     safetyStock: parseFloat(formData.Safety_Stock) || 0,
                     image: formData.Item_Image,
+                    isCritical: formData.Is_Critical,
                     updatedBy: empId
                 })
             });
@@ -472,7 +473,8 @@ export default function ItemMasterView() {
             {modalConfig.isOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center" onMouseDown={(e) => { if(e.target === e.currentTarget) setModalConfig({isOpen: false}) }}>
                     <div 
-                        className="bg-card w-full max-w-2xl p-6 rounded-xl shadow-xl border relative flex flex-col max-h-[90vh]"
+                        // className="bg-card w-full max-w-2xl p-6 rounded-xl shadow-xl border relative flex flex-col max-h-[90vh]"
+                        className="bg-card w-[calc(100%-2rem)] max-w-2xl p-4 sm:p-6 rounded-xl shadow-xl border relative flex flex-col max-h-[75vh] sm:max-h-[90vh]"
                         style={{ transform: `translate(${position.x}px, ${position.y}px)`, transition: isDragging ? "none" : "transform 0.05s ease-out" }}
                     >
                         <div className="flex justify-between items-center mb-4 border-b pb-2 cursor-move select-none" onMouseDown={handleMouseDown}>
@@ -483,12 +485,29 @@ export default function ItemMasterView() {
                             <Button variant="ghost" size="icon" onMouseDown={e => e.stopPropagation()} onClick={() => setModalConfig({isOpen: false})} className="h-8 w-8 rounded-full cursor-pointer"><X className="h-5 w-5" /></Button>
                         </div>
                         
-                        <div className="flex-1 overflow-auto p-1">
-                            <div className="text-xs text-muted-foreground mb-4 space-y-1 bg-muted/30 p-3 rounded-md">
-                                <p><strong className="text-foreground">Spec:</strong> {modalConfig.row?.Item_Spec}</p>
-                                <p><strong className="text-foreground">Desc:</strong> {modalConfig.row?.Item_Des}</p>
+                        {/* <div className="flex-1 overflow-auto p-1"> */}
+                        <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 sm:p-2 min-h-0 pr-2">
+                            <div className="flex flex-col sm:flex-row sm:items-start justify-between bg-muted/30 p-3 rounded-md mb-4 gap-4">
+                                <div className="text-xs text-muted-foreground space-y-1">
+                                    <p><strong className="text-foreground">Spec:</strong> {modalConfig.row?.Item_Spec}</p>
+                                    <p><strong className="text-foreground">Desc:</strong> {modalConfig.row?.Item_Des}</p>
+                                </div>
+                                <div className="flex items-center gap-3 bg-background/50 p-2 rounded-lg border border-border/50 shrink-0">
+                                    <span className="text-xs font-semibold">Critical Part?</span>
+                                    <Button
+                                        type="button"
+                                        variant={formData.Is_Critical ? "destructive" : "secondary"}
+                                        size="sm"
+                                        className={cn("h-7 px-3 text-xs cursor-pointer transition-colors", 
+                                            !formData.Is_Critical && "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-800 dark:text-gray-300"
+                                        )}
+                                        onClick={() => modalConfig.mode === 'edit' && setFormData(p => ({ ...p, Is_Critical: !p.Is_Critical }))}
+                                        disabled={modalConfig.mode === 'view'}
+                                    >
+                                        {formData.Is_Critical ? "YES (Critical)" : "NO (Uncritical)"}
+                                    </Button>
+                                </div>
                             </div>
-
                             <div className={cn("flex gap-4", modalConfig.mode === 'edit' ? "flex-col md:flex-row" : "flex-col")}>
                                 <div className={cn("border border-primary/10 rounded-lg p-2 group flex flex-col", modalConfig.mode === 'edit' ? "w-full md:w-1/2" : "w-full")}>
                                     <span className="text-[10px] font-bold uppercase text-center block mb-2 opacity-70 tracking-wider">Item Image</span>
