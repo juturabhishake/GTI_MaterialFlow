@@ -426,7 +426,7 @@ export default function ItemMasterView() {
                             ) : processedData.length > 0 ? processedData.map((row) => (
                                 <tr key={row.Item_Id} className="hover:bg-muted/50 transition-colors">
                                     <td className="p-2 border-r text-center">
-                                        <Button variant="ghost" size="icon" className="h-7 w-7 cursor-pointer" onClick={() => openModal(row, isAdmin ? 'edit' : 'view')}>
+                                        <Button disabled={!isAdmin && !row.Item_Image} variant="ghost" size="icon" className="h-7 w-7 cursor-pointer" onClick={() => openModal(row, isAdmin ? 'edit' : 'view')}>
                                             {isAdmin ? <Pencil className="h-3.5 w-3.5 text-primary" /> : <Eye className="h-3.5 w-3.5 text-gray-600" />}
                                         </Button>
                                     </td>
@@ -445,7 +445,7 @@ export default function ItemMasterView() {
                         </tbody>
                     </table>
                 </div>
-                
+            
                 <div className="flex-none p-3 border-t bg-muted/20 flex flex-col sm:flex-row justify-between items-center gap-4 text-xs text-muted-foreground">
                     <div className="flex items-center gap-2">
                         <span>Show</span>
@@ -487,7 +487,8 @@ export default function ItemMasterView() {
                         
                         {/* <div className="flex-1 overflow-auto p-1"> */}
                         <div className="flex-1 overflow-y-auto overflow-x-hidden p-1 sm:p-2 min-h-0 pr-2">
-                            <div className="flex flex-col sm:flex-row sm:items-start justify-between bg-muted/30 p-3 rounded-md mb-4 gap-4">
+                            {/* <div className="flex flex-col sm:flex-row sm:items-start justify-between bg-muted/30 p-3 rounded-md mb-4 gap-4"> */}
+                            <div className={cn("flex flex-col sm:flex-row sm:items-start justify-between bg-muted/30 p-3 rounded-md mb-4 gap-4", modalConfig.mode === 'view' && "hidden")}>
                                 <div className="text-xs text-muted-foreground space-y-1">
                                     <p><strong className="text-foreground">Spec:</strong> {modalConfig.row?.Item_Spec}</p>
                                     <p><strong className="text-foreground">Desc:</strong> {modalConfig.row?.Item_Des}</p>
@@ -509,12 +510,20 @@ export default function ItemMasterView() {
                                 </div>
                             </div>
                             <div className={cn("flex gap-4", modalConfig.mode === 'edit' ? "flex-col md:flex-row" : "flex-col")}>
-                                <div className={cn("border border-primary/10 rounded-lg p-2 group flex flex-col", modalConfig.mode === 'edit' ? "w-full md:w-1/2" : "w-full")}>
-                                    <span className="text-[10px] font-bold uppercase text-center block mb-2 opacity-70 tracking-wider">Item Image</span>
-                                    <div className="h-48 border-2 border-dashed border-primary/20 rounded-lg flex flex-col items-center justify-center relative overflow-hidden group-hover:border-primary/50">
+                                <div className={cn("flex flex-col", modalConfig.mode === 'edit' ? "w-full md:w-1/2 border border-primary/10 rounded-lg p-2 group " : "w-full")}>
+                                    {/* <span className="text-[10px] font-bold uppercase text-center block mb-2 opacity-70 tracking-wider">Item Image</span> */}
+                                    {modalConfig.mode === 'edit' && (
+                                        <span className="text-[10px] font-bold uppercase text-center block mb-2 opacity-70 tracking-wider">
+                                            Item Image
+                                        </span>
+                                    )}
+                                    <div className={cn("h-48 border-2 border-dashed border-primary/20 rounded-lg flex flex-col items-center justify-center relative overflow-hidden group-hover:border-primary/50", modalConfig.mode === 'view' && "h-95 border-2 border-dashed border-primary/20 rounded-lg flex flex-col items-center justify-center relative overflow-hidden group-hover:border-primary/50")}>
                                         {formData.Item_Image ? (
                                             <>
-                                                <img src={formData.Item_Image} className="w-full h-full object-contain" />
+                                                <img 
+                                                    src={formData.Item_Image} 
+                                                    className="w-full h-full object-contain" 
+                                                />
                                                 {modalConfig.mode === 'edit' && (
                                                     <button onClick={() => setFormData(p=>({...p, Item_Image: null}))} className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full cursor-pointer z-10 shadow-lg"><X size={12}/></button>
                                                 )}
