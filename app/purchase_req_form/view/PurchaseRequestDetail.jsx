@@ -369,12 +369,17 @@ export default function PurchaseRequestDetail({ request, onBack }) {
         employeeId = ls.current.get("employee_id") || "SYSTEM";
       } catch {}
       const filteredRows = rows.filter(row => row.Proceed_to_Complete === true || row.is_Completed === true);
-      if (filteredRows.length === 0 && !approvalData) {
+      // if (filteredRows.length === 0 && !approvalData) {
+      //   toast.warning("No records selected to update.");
+      //   setIsSaving(false);
+      //   return;
+      // }
+      if (rows.length === 0 && !approvalData) {
         toast.warning("No records selected to update.");
         setIsSaving(false);
         return;
       }
-      const payload = filteredRows.map((row) => {
+      const payload = rows.map((row) => {
         const willBeCompleted = row.is_Completed || row.Proceed_to_Complete;
         return {
           ...row,
