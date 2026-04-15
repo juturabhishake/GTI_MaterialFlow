@@ -119,7 +119,7 @@ const ItemCodeSelector = ({ options, onSelect, disabled, selectedValues = [] }) 
     return (
         <Popover open={open} onOpenChange={setOpen}>
             <PopoverTrigger asChild>
-                <Button variant="outline" disabled={disabled} className="w-[140px] justify-start px-2">
+                <Button variant="outline" disabled={disabled} className="w-[140px] justify-start px-2 cursor-pointer">
                     <Plus className="mr-2 h-4 w-4" /> Add Item
                 </Button>
             </PopoverTrigger>
@@ -130,7 +130,8 @@ const ItemCodeSelector = ({ options, onSelect, disabled, selectedValues = [] }) 
                         <CommandEmpty>No item found.</CommandEmpty>
                         <CommandGroup className="max-h-60 overflow-y-auto">
                             {options.map((option) => (
-                                <CommandItem className='cursor-pointer' key={option.value} value={option.value} onSelect={() => { onSelect(option.value); }}>
+                                // <CommandItem className='cursor-pointer' key={option.value} value={option.value} onSelect={() => { onSelect(option.value); }}>
+                                <CommandItem className='cursor-pointer' key={option.value} value={option.label} onSelect={() => { onSelect(option.value); }}>
                                     <Check className={cn("mr-2 h-4 w-4", selectedValues.includes(option.value) ? "opacity-100" : "opacity-0")} />
                                     {option.label}
                                 </CommandItem>
@@ -179,14 +180,35 @@ export default function PurchaseRequestClient() {
 
     useEffect(() => {
         fetchDataForDate(date);
-        const fetchItems = async () => { try { const res = await fetch('/api/walter/items'); const data = await res.json(); setItemCodeOptions(data.map(i => ({ value: i.ItemCode, label: i.ItemCode }))); } catch {} };
+        // const fetchItems = async () => { try { const res = await fetch('/api/walter/items'); const data = await res.json(); setItemCodeOptions(data.map(i => ({ value: i.ItemCode, label: i.ItemCode }))); } catch {} };
+        const fetchItems = async () => { 
+            try { 
+                const res = await fetch('/api/walter/items'); 
+                const data = await res.json(); 
+                setItemCodeOptions(data.map(i => ({ 
+                    value: i.ItemCode, 
+                    label: `${i.ItemCode} | ${i.SizeSpecifications || ''}` // Ikkada label ki concatinate chesthunnam
+                }))); 
+            } catch {} 
+        };
         fetchItems();
     }, [date, fetchDataForDate]);
+    // useEffect(() => {
+    //     if (date && tableRows.length > 0) {
+    //         setTableRows(prevRows => prevRows.map(row => ({
+    //             ...row,
+    //             DemandDate: date 
+    //         })));
+    //     }
+    // }, [date]);
     useEffect(() => {
         if (date && tableRows.length > 0) {
+            const next30Days = new Date(date);
+            next30Days.setDate(next30Days.getDate() + 30);
+
             setTableRows(prevRows => prevRows.map(row => ({
                 ...row,
-                DemandDate: date 
+                DemandDate: next30Days 
             })));
         }
     }, [date]);
@@ -195,7 +217,8 @@ export default function PurchaseRequestClient() {
         try {
             const response = await fetch('/api/purchaserequest/item-details', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ itemCode }) });
             const details = await response.json();
-            const newRow = { Id: 0, tempId: `new-${Date.now()}-${Math.random()}`, ReqDate: date, MaterialCode: itemCode, ItemSpecification: details.ItemSpecification || details.SizeSpecifications || '', ProjectName: details.ProjectName || '', OrderQty: null, CheckNGQty: null, DetermineOrderQty: null, DemandDate: date, ConfirmationByUser: null, Remarks: null, isSave: 0 };
+            //ProjectName: details.ProjectName || '', DemandDate: date,
+            const newRow = { Id: 0, tempId: `new-${Date.now()}-${Math.random()}`, ReqDate: date, MaterialCode: itemCode, ItemSpecification: details.ItemSpecification || details.SizeSpecifications || '', ProjectName: '', OrderQty: null, CheckNGQty: null, DetermineOrderQty: null, DemandDate: new Date(new Date(date).setDate(date.getDate() + 30)), ConfirmationByUser: null, Remarks: null, isSave: 0 };
             setTableRows(prev => [...prev, newRow]);
             toast.success(`Added ${itemCode}`);
         } catch { toast.error(`Failed to get details for ${itemCode}`); }
@@ -264,11 +287,11 @@ export default function PurchaseRequestClient() {
                 <header className="flex flex-wrap lg:flex-row items-start lg:items-center justify-between gap-4">
                     <h1 className="text-xl sm:text-2xl font-bold text-brand-500 whitespace-nowrap">Purchase Request</h1>
                     <div className="flex flex-wrap items-center gap-2 w-full lg:w-auto">
-                        <Button onClick={handleSave} disabled={isSaving || !date} className={cn("w-24", isSaving && "opacity-80")}>
+                        <Button onClick={handleSave} disabled={isSaving || !date} className={cn("w-24 cursor-pointer", isSaving && "opacity-80")}>
                             {isSaving ? <Loader2 className="animate-spin h-4 w-4" /> : <Save className="mr-2 h-4 w-4" />} Save
                         </Button>
                         <Popover>
-                            <PopoverTrigger asChild><Button variant={"outline"} className="w-[200px] justify-start text-left font-normal px-3"><CalendarIcon className="mr-2 h-4 w-4" />{date ? format(date, "PPP") : <span>Pick a date</span>}</Button></PopoverTrigger>
+                            <PopoverTrigger asChild><Button variant={"outline"} className="w-[200px] justify-start text-left font-normal px-3 cursor-pointer"><CalendarIcon className="mr-2 h-4 w-4" />{date ? format(date, "PPP") : <span>Pick a date</span>}</Button></PopoverTrigger>
                             <PopoverContent className="w-auto p-0"><Calendar mode="single" selected={date} onSelect={setDate} initialFocus disabled={(date) => date < new Date().setHours(0, 0, 0, 0)} /></PopoverContent>
                         </Popover>
                         <ItemCodeSelector options={itemCodeOptions} selectedValues={tableRows.map(r => r.MaterialCode)} onSelect={handleAddItem} disabled={!date} />
@@ -303,7 +326,19 @@ export default function PurchaseRequestClient() {
                                     <td className="px-4 py-1 text-xs text-muted-foreground">{i + 1 + (pagination.currentPage - 1) * pagination.rowsPerPage}</td>
                                     <td className="px-4 py-1 font-semibold text-xs">{row.MaterialCode}</td>
                                     <td className="px-4 py-1 text-xs truncate max-w-[200px]" title={row.ItemSpecification}>{row.ItemSpecification}</td>
-                                    <td className="px-4 py-1 text-xs truncate max-w-[150px]">{row.ProjectName}</td>
+                                    {/* <td className="px-4 py-1 text-xs truncate max-w-[150px]">{row.ProjectName}</td> */}
+                                    <td className="px-4 py-1">
+                                        {isLocked ? (
+                                            <span className="text-xs text-muted-foreground">{row.ProjectName}</span>
+                                        ) : (
+                                            <Input 
+                                                className="h-7 w-32 text-xs min-w-[120px]" 
+                                                value={row.ProjectName || ''} 
+                                                onChange={e => handleRowChange(row.tempId, 'ProjectName', e.target.value)} 
+                                                placeholder="Enter Project"
+                                            />
+                                        )}
+                                    </td>
                                     <td className="px-4 py-1">
                                         {isLocked ? (
                                             <span className="text-xs text-muted-foreground">{row.OrderQty}</span>
