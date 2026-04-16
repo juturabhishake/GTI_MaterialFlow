@@ -168,6 +168,16 @@ const data = {
       url: "/item-master",
       icon: IconDatabase,
     },
+    {
+      title: "Tool Forecast View",
+      url: "/tool_forecast_view",
+      icon: IconDatabase,
+    },
+    {
+      title: "Tool Surcharge",
+      url: "/tool_surcharge",
+      icon: IconDatabase,
+    },
     // {
     //   title: "Equipment Maintenance",
     //   url: "#",
