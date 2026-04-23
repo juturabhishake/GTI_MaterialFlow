@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { format, subDays } from "date-fns";
+import { format, subDays, startOfYear, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { exportToExcel } from "@/components/exportUtils";
 import { useAccessCheck } from '@/lib/useAccessCheck';
@@ -70,7 +70,8 @@ export default function MaterialRequestsView() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [jumpPage, setJumpPage] = useState("1");
-    const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 7), to: new Date() });
+    // const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 7), to: new Date() });
+    const [dateRange, setDateRange] = useState({ from: startOfYear(new Date()), to: new Date() });
     const [exportState, setExportState] = useState('idle');
     const [isMobile, setIsMobile] = useState(false);
 
@@ -183,7 +184,7 @@ export default function MaterialRequestsView() {
     };
 
     const renderVal = (val) => (val === null || val === undefined || val === '') ? '-' : val;
-
+    
     const columns = [
         { key: 'Req_No', label: 'Request No', w: 'w-[120px]' },
         { key: 'Req_by', label: 'Requested By', w: 'w-[120px]' },
@@ -192,9 +193,33 @@ export default function MaterialRequestsView() {
         { key: 'Item_Desc', label: 'Description', w: 'min-w-[250px]' },
         { key: 'Req_Qty', label: 'Req Qty', w: 'w-[100px]' },
         { key: 'Recv_Qty', label: 'Recv Qty', w: 'w-[100px]' },
+        { key: 'Received_Date', label: 'Received Dates', w: 'min-w-[150px]' },
         { key: 'Pending', label: 'Pending', w: 'w-[100px]' }
     ];
-
+    const getRowColorClass = (row) => {
+        if (!row.Req_Dt || !row.Req_No) return "";
+        
+        const reqDate = new Date(row.Req_Dt);
+        const today = new Date();
+        const daysPassed = differenceInDays(today, reqDate);
+        
+        const isQMS = row.Req_No.toUpperCase().startsWith('QMS');
+        const isQHX = row.Req_No.toUpperCase().startsWith('QHX');
+        
+        let limit = 0;
+        if (isQMS) limit = 30;
+        else if (isQHX) limit = 90;
+        else return "";
+        if (daysPassed <= limit) {
+            return ""; 
+        } else {
+            if (Number(row.Pending) === 0) {
+                return "bg-green-100 hover:bg-green-200 text-green-900 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300"; 
+            } else {
+                return "bg-red-100 hover:bg-red-200 text-red-900 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300"; 
+            }
+        }
+    };
     return (
         <div className="@container/main flex flex-col h-screen overflow-hidden bg-background space-y-2 font-sans w-full">
             <div className="flex-none flex flex-col md:flex-row items-start md:items-center justify-between bg-card p-4 rounded-lg shadow-sm border border-border gap-4">
@@ -256,10 +281,29 @@ export default function MaterialRequestsView() {
                                             </td>
                                         </tr>
                                     ) : paginatedData.length > 0 ? paginatedData.map((row, i) => (
-                                        <tr key={i} className="hover:bg-muted/50 transition-colors group text-[11px]">
-                                            {columns.map(col => (
+                                        // <tr key={i} className="hover:bg-muted/50 transition-colors group text-[11px]">
+                                        <tr key={i} className={cn("hover:bg-muted/50 transition-colors group text-[11px]", getRowColorClass(row))}>
+                                            {/* {columns.map(col => (
                                                 <td key={col.key} className={cn("p-2 border-r border-border", col.key === 'Item_Desc' && "max-w-[250px] truncate")} title={row[col.key]}>
                                                     {col.key === 'Req_Dt' && row[col.key] ? format(new Date(row[col.key]), 'yyyy-MM-dd') : renderVal(row[col.key])}
+                                                </td>
+                                            ))} */}
+                                            {columns.map(col => (
+                                                <td key={col.key} className={cn("p-2 border-r border-border", col.key === 'Item_Desc' && "max-w-[250px] truncate")} title={row[col.key]}>
+                                                    {col.key === 'Req_Dt' && row[col.key] ? format(new Date(row[col.key]), 'yyyy-MM-dd') : 
+                                                     col.key === 'Received_Date' && row[col.key] ? (
+                                                         <div className="flex flex-wrap gap-1">
+                                                             {row[col.key].split(',').map((dateStr, idx) => {
+                                                                 const d = new Date(dateStr.trim());
+                                                                 return (
+                                                                     <span key={idx} className="bg-slate-200 text-slate-800 border border-slate-300 px-2 py-0.5 rounded-full text-[10px]">
+                                                                         {isNaN(d.getTime()) ? dateStr : format(d, 'dd-MM-yyyy')}
+                                                                     </span>
+                                                                 );
+                                                             })}
+                                                         </div>
+                                                     ) : 
+                                                     renderVal(row[col.key])}
                                                 </td>
                                             ))}
                                         </tr>

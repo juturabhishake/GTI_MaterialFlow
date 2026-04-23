@@ -8,7 +8,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList, CommandSeparator } from "@/components/ui/command";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Calendar } from "@/components/ui/calendar";
-import { format, subDays } from "date-fns";
+// import { format, subDays } from "date-fns";
+import { format, subDays, startOfYear, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
 import { exportToExcel } from "@/components/exportUtils";
 import { useAccessCheck } from '@/lib/useAccessCheck';
@@ -69,7 +70,8 @@ export default function PurchaseReceiptsView() {
     const [currentPage, setCurrentPage] = useState(1);
     const [pageSize, setPageSize] = useState(10);
     const [jumpPage, setJumpPage] = useState("1");
-    const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 7), to: new Date() });
+    // const [dateRange, setDateRange] = useState({ from: subDays(new Date(), 7), to: new Date() });
+    const [dateRange, setDateRange] = useState({ from: startOfYear(new Date()), to: new Date() });
     const [exportState, setExportState] = useState('idle');
     const [isMobile, setIsMobile] = useState(false);
 
