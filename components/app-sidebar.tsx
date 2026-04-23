@@ -149,6 +149,38 @@ const data = {
       ]
     },
     {
+      title: "External Regrinding Request",
+      url: "#",
+      icon: IconFolder,
+      items: [
+        {
+          icon: IconFileWord,
+          title: "Add",
+          url: "/external_regrinding_request",
+        },
+        {
+          icon: IconDatabase,
+          title: "View",
+          url: "/external_regrinding_request/view",
+        },
+        {
+          icon: IconDatabase,
+          title: "Sent to Coating",
+          url: "/external_regrinding_request/send_to_coating",
+        },
+        {
+          icon: IconDatabase,
+          title: "Coating View",
+          url: "/external_regrinding_request/coating_view",
+        },
+        {
+          icon: IconDatabase,
+          title: "Final View",
+          url: "/external_regrinding_request/final_view",
+        },
+      ]
+    },
+    {
       title: "Process Audit",
       url: "#",
       icon: IconListDetails,
