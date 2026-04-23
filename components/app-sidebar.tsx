@@ -149,7 +149,7 @@ const data = {
       ]
     },
     {
-      title: "External Regrinding Request",
+      title: "Ext. Regrinding Request",
       url: "#",
       icon: IconFolder,
       items: [
