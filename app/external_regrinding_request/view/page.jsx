@@ -3,8 +3,8 @@ import React, { Suspense } from 'react';
 import ViewPurchaseRequestClient from './ViewPurchaseRequestClient';
 
 export const metadata = {
-  title: "Purchase Request | GreenTech Industries",
-  description: "Entry page for View Purchase Request Screen.",
+  title: "Ext. Regrinding Request | GreenTech Industries",
+  description: "Entry page for View External Regrinding Request Screen.",
 };
 
 export default function DashboardPage() {
