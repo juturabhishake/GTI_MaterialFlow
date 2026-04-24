@@ -177,7 +177,16 @@ export default function ItemMasterView() {
         Object.keys(tableColumnFilters).forEach(key => {
             const selectedVals = tableColumnFilters[key];
             if (selectedVals && selectedVals.length > 0) {
-                result = result.filter(item => selectedVals.includes(String(item[key] || "")));
+                result = result.filter((item) => {
+                    let val = item[key];
+                    if (key === 'Is_Critical') {
+                        const isCrit = (val === true || val === 1 || val === '1' || val === 'true');
+                        return selectedVals.includes(String(isCrit));
+                    }
+                    return selectedVals.includes(String(val ?? ""));
+                });
+                // result = result.filter(item => selectedVals.includes(String(item[key] || "")));
+                // result = result.filter(item => selectedVals.includes(String(item[key] ?? "")));
             }
         });
         if (sortConfig.key && sortConfig.direction) {
@@ -293,10 +302,17 @@ export default function ItemMasterView() {
         const uniqueValues = Array.from(new Set(data.map(item => item[key]))).filter(v => v !== null && v !== undefined && v !== '');
         return uniqueValues.map(v => {
             let label = String(v);
+            // if (key === 'Is_Critical') {
+            //     label = (v === true || v === 1 || v === '1' || v === 'true') ? 'Yes' : 'No';
+            // }
+            let value = String(v);
             if (key === 'Is_Critical') {
-                label = (v === true || v === 1 || v === '1' || v === 'true') ? 'Yes' : 'No';
+                const isCrit = (v === true || v === 1 || v === '1' || v === 'true');
+                label = isCrit ? 'Yes' : 'No';
+                value = String(isCrit); 
             }
-            return { label, value: String(v) };
+            // return { label, value: String(v) };
+            return { label, value };
         });
     };
 

@@ -203,13 +203,16 @@ export default function ToolSurchargeView() {
         if (sortConfig.direction === 'ASC') return <ArrowUp className="h-3 w-3 ml-1" />;
         return <ArrowDown className="h-3 w-3 ml-1" />;
     };
-
+    // const getUniqueOptions = (key) => {
+    //     if (!Array.isArray(processedData)) return [];
+    //     const uniqueValues = Array.from(new Set(processedData.map(item => item[key]))).filter(v => v !== null && v !== undefined && v !== '');
+    //     return uniqueValues.map(v => ({ label: String(v), value: String(v) }));
+    // };
     const getUniqueOptions = (key) => {
-        if (!Array.isArray(processedData)) return [];
-        const uniqueValues = Array.from(new Set(processedData.map(item => item[key]))).filter(v => v !== null && v !== undefined && v !== '');
+        if (!Array.isArray(data)) return []; 
+        const uniqueValues = Array.from(new Set(data.map(item => item[key]))).filter(v => v !== null && v !== undefined && v !== '');
         return uniqueValues.map(v => ({ label: String(v), value: String(v) }));
     };
-
     const totalRecords = processedData.length;
     const totalPages = pageSize === 'All' ? 1 : Math.ceil(totalRecords / pageSize);
     const currentLimit = pageSize === 'All' ? totalRecords : pageSize;
