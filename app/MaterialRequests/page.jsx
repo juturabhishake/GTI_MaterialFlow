@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Calendar } from "@/components/ui/calendar";
 import { format, subDays, startOfYear, differenceInDays } from "date-fns";
 import { cn } from "@/lib/utils";
-import { exportToExcel } from "@/components/exportUtils";
+import { exportToExcel } from "./exportUtils";
 import { useAccessCheck } from '@/lib/useAccessCheck';
 
 const FilterPopover = ({ columnKey, title, data, selectedValues, onSelect, onSelectAll, onClear }) => {
