@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect, useMemo } from "react";
-import { Loader2, FileSpreadsheet, ListFilter, CalendarIcon, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, Check, FileText, X } from "lucide-react";
+import { Loader2, FileSpreadsheet, ListFilter, CalendarIcon, ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, ArrowUpDown, ArrowUp, ArrowDown, Check, FileText, X, ChevronDown  } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,7 +74,7 @@ export default function MaterialRequestsView() {
     const [dateRange, setDateRange] = useState({ from: startOfYear(new Date()), to: new Date() });
     const [exportState, setExportState] = useState('idle');
     const [isMobile, setIsMobile] = useState(false);
-
+    const [statusFilters, setStatusFilters] = useState([]);
     useEffect(() => {
         const checkMobile = () => setIsMobile(window.innerWidth < 768);
         checkMobile();
@@ -131,7 +131,36 @@ export default function MaterialRequestsView() {
         setColumnFilters(prev => ({ ...prev, [columnKey]: allValues }));
         setCurrentPage(1);
     };
-
+    const getRowColorClass = (row) => {
+        if (!row.Req_Dt || !row.Req_No) return "";
+        
+        const reqDate = new Date(row.Req_Dt);
+        const today = new Date();
+        const daysPassed = differenceInDays(today, reqDate);
+        
+        const isQMS = row.Req_No.toUpperCase().startsWith('QMS');
+        const isQHX = row.Req_No.toUpperCase().startsWith('QHX');
+        
+        let limit = 0;
+        if (isQMS) limit = 30;
+        else if (isQHX) limit = 90;
+        else return "";
+        if (daysPassed <= limit) {
+            return ""; 
+        } else {
+            if (Number(row.Pending) === 0) {
+                return "bg-green-100 hover:bg-green-200 text-green-900 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300"; 
+            } else {
+                return "bg-red-100 hover:bg-red-200 text-red-900 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300"; 
+            }
+        }
+    };
+    const getRowStatus = (row) => {
+        const classes = getRowColorClass(row);
+        if (classes.includes("bg-green")) return "Received";
+        if (classes.includes("bg-red")) return "Pending";
+        return "InProgress";
+    };
     const processedData = useMemo(() => {
         let result = [...data];
         Object.keys(columnFilters).forEach(key => {
@@ -140,6 +169,12 @@ export default function MaterialRequestsView() {
                 result = result.filter(item => selectedValues.includes(String(item[key] || "")));
             }
         });
+        if (statusFilters.length > 0) {
+            result = result.filter(item => {
+                const status = getRowStatus(item);
+                return statusFilters.includes(status);
+            });
+        }
         if (sortConfig.key !== null) {
             result.sort((a, b) => {
                 let valA = String(a[sortConfig.key] || "").toLowerCase();
@@ -150,14 +185,14 @@ export default function MaterialRequestsView() {
             });
         }
         return result;
-    }, [data, columnFilters, sortConfig]);
+    }, [data, columnFilters, sortConfig, statusFilters]);
 
     const totalItems = processedData.length;
     const totalPages = pageSize === 'All' ? 1 : Math.ceil(totalItems / pageSize) || 1;
     const paginatedData = pageSize === 'All' ? processedData : processedData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
     const handlePageChange = (newPage) => {
-        if(newPage >= 1 && newPage <= totalPages) {
+        if(newPage >= 1 && newPage <= totalPages) {   
             setCurrentPage(newPage);
             setJumpPage(String(newPage));
         }
@@ -196,30 +231,6 @@ export default function MaterialRequestsView() {
         { key: 'Received_Date', label: 'Received Dates', w: 'min-w-[150px]' },
         { key: 'Pending', label: 'Pending', w: 'w-[100px]' }
     ];
-    const getRowColorClass = (row) => {
-        if (!row.Req_Dt || !row.Req_No) return "";
-        
-        const reqDate = new Date(row.Req_Dt);
-        const today = new Date();
-        const daysPassed = differenceInDays(today, reqDate);
-        
-        const isQMS = row.Req_No.toUpperCase().startsWith('QMS');
-        const isQHX = row.Req_No.toUpperCase().startsWith('QHX');
-        
-        let limit = 0;
-        if (isQMS) limit = 30;
-        else if (isQHX) limit = 90;
-        else return "";
-        if (daysPassed <= limit) {
-            return ""; 
-        } else {
-            if (Number(row.Pending) === 0) {
-                return "bg-green-100 hover:bg-green-200 text-green-900 dark:bg-green-900/30 dark:hover:bg-green-900/50 dark:text-green-300"; 
-            } else {
-                return "bg-red-100 hover:bg-red-200 text-red-900 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300"; 
-            }
-        }
-    };
     return (
         <div className="@container/main flex flex-col h-screen overflow-hidden bg-background space-y-2 font-sans w-full">
             <div className="flex-none flex flex-col md:flex-row items-start md:items-center justify-between bg-card p-4 rounded-lg shadow-sm border border-border gap-4">
@@ -238,6 +249,70 @@ export default function MaterialRequestsView() {
                         {exportState === 'success' && <Check className="h-5 w-5 text-white" />}
                         {exportState === 'error' && <X className="h-5 w-5 text-white" />}
                     </Button>
+                    <Popover>
+                        <PopoverTrigger asChild>
+                            <Button variant="outline" className="w-[180px] justify-between border-primary/20">
+                                {statusFilters.length === 0 
+                                    ? "All Statuses" 
+                                    : statusFilters.length === 1 
+                                        ? statusFilters[0] 
+                                        : `${statusFilters.length} Selected`}
+                                <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-[180px] p-0" align="end">
+                            <Command>
+                                <CommandInput placeholder="Search status..." className="h-9 text-xs" />
+                                <CommandList>
+                                    <CommandEmpty>No results found.</CommandEmpty>
+                                    <CommandGroup>
+                                        {[
+                                            { label: "Pending", value: "Pending" },
+                                            { label: "Received", value: "Received" },
+                                            { label: "In Progress", value: "InProgress" }
+                                        ].map((status) => {
+                                            const isSelected = statusFilters.includes(status.value);
+                                            return (
+                                                <CommandItem
+                                                    key={status.value}
+                                                    onSelect={() => {
+                                                        setStatusFilters(prev => {
+                                                            if (isSelected) {
+                                                                return prev.filter(s => s !== status.value);
+                                                            } else {
+                                                                return [...prev, status.value];
+                                                            }
+                                                        });
+                                                        setCurrentPage(1);
+                                                    }}
+                                                    className="text-xs cursor-pointer"
+                                                >
+                                                    <div className={cn("mr-2 flex h-4 w-4 items-center justify-center rounded-sm border border-primary", isSelected ? "bg-primary text-primary-foreground" : "opacity-50 [&_svg]:invisible")}>
+                                                        <Check className="h-3 w-3" />
+                                                    </div>
+                                                    <span>{status.label}</span>
+                                                </CommandItem>
+                                            );
+                                        })}
+                                    </CommandGroup>
+                                    
+                                    {statusFilters.length > 0 && (
+                                        <>
+                                            <CommandSeparator />
+                                            <CommandGroup>
+                                                <CommandItem 
+                                                    onSelect={() => { setStatusFilters([]); setCurrentPage(1); }} 
+                                                    className="justify-center text-xs font-medium text-destructive cursor-pointer aria-selected:bg-destructive/10"
+                                                >
+                                                    Clear Selection
+                                                </CommandItem>
+                                            </CommandGroup>
+                                        </>
+                                    )}
+                                </CommandList>
+                            </Command>
+                        </PopoverContent>
+                    </Popover>
                     <Popover>
                         <PopoverTrigger asChild>
                             <Button variant={"outline"} className={cn("w-[280px] justify-start text-left font-normal border-primary/20", !dateRange && "text-muted-foreground")}>
